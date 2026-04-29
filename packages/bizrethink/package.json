@@ -1,0 +1,19 @@
+{
+  "name": "@bizrethink/customizations",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "license": "UNLICENSED",
+  "files": [
+    "server-only/",
+    "ui/",
+    "prisma-extensions/",
+    "feature-flags.ts",
+    "index.ts"
+  ],
+  "dependencies": {},
+  "devDependencies": {
+    "@documenso/tsconfig": "*"
+  }
+}

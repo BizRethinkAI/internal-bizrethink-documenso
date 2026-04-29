@@ -1,0 +1,105 @@
+name: Upstream sync
+
+# Weekly attempt to merge documenso/main into our main.
+# - If clean merge: opens a PR with the upstream diff for review.
+# - If conflicts: opens a PR with conflict markers + the list of overlay patches
+#   that may need re-application.
+#
+# Manual trigger also available via Actions tab.
+#
+# See UPSTREAM.md for the full sync runbook.
+
+on:
+  schedule:
+    # Mondays 04:00 UTC = ~Sunday evening US East coast — review during business hours Mon
+    - cron: "0 4 * * 1"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "bizrethink-bot"
+          git config user.email "bot@bizrethink.ai"
+
+      - name: Add upstream remote
+        run: git remote add upstream https://github.com/documenso/documenso.git
+
+      - name: Fetch upstream
+        run: git fetch upstream main
+
+      - name: Create sync branch
+        id: branch
+        run: |
+          BRANCH="sync/$(date +%Y-%m-%d)"
+          git checkout -b "$BRANCH"
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+
+      - name: Attempt merge
+        id: merge
+        continue-on-error: true
+        run: |
+          if git merge upstream/main --no-edit; then
+            echo "result=clean" >> $GITHUB_OUTPUT
+          else
+            echo "result=conflicts" >> $GITHUB_OUTPUT
+            git status > /tmp/conflict-status.txt
+          fi
+
+      - name: List overlay patches that may need re-application
+        if: steps.merge.outputs.result == 'conflicts'
+        run: |
+          echo "Overlay patches in this repo:" > /tmp/overlay-list.txt
+          ls overlays/*.patch >> /tmp/overlay-list.txt 2>/dev/null || echo "(none)" >> /tmp/overlay-list.txt
+          cat /tmp/overlay-list.txt
+
+      - name: Push sync branch
+        run: git push origin ${{ steps.branch.outputs.branch }} --force
+
+      - name: Open PR (clean merge)
+        if: steps.merge.outputs.result == 'clean'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --base main \
+            --head ${{ steps.branch.outputs.branch }} \
+            --title "chore(upstream-sync): $(date +%Y-%m-%d) — clean merge" \
+            --body "Automated weekly merge of \`documenso/main\` into our main. **Clean merge — no conflicts.** Review the diff, run smoke tests, and merge if all good."
+
+      - name: Open PR (with conflicts)
+        if: steps.merge.outputs.result == 'conflicts'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          {
+            echo "Automated weekly merge of \`documenso/main\` into our main hit **CONFLICTS**."
+            echo ""
+            echo "## Conflict status"
+            echo "\`\`\`"
+            cat /tmp/conflict-status.txt
+            echo "\`\`\`"
+            echo ""
+            echo "## Overlay patches in repo (may need re-application)"
+            echo "\`\`\`"
+            cat /tmp/overlay-list.txt
+            echo "\`\`\`"
+            echo ""
+            echo "Resolve per the runbook in \`UPSTREAM.md\`."
+          } > /tmp/pr-body.md
+          gh pr create \
+            --base main \
+            --head ${{ steps.branch.outputs.branch }} \
+            --title "chore(upstream-sync): $(date +%Y-%m-%d) — CONFLICTS need review" \
+            --body-file /tmp/pr-body.md

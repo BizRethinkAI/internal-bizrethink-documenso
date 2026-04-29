@@ -1,0 +1,32 @@
+# Why: Self-hosted Documenso defaults new orgs to the FREE claim, which has empty
+#      feature flags. For BizRethink internal use we want all 13 feature flags
+#      enabled by default (custom branding, embed signing, signing reminders,
+#      etc.). The ENTERPRISE claim has 9 of 13 flags pre-enabled and is the
+#      closest pre-built option. Combined with NEXT_PUBLIC_FEATURE_BILLING_ENABLED=false
+#      this gives us full self-host functionality.
+#
+# Why-not-additive: This is a single-line default-value change inside upstream
+#      code that wires through every org-creation path. There's no extension
+#      point or env-var indirection to override it as an additive change without
+#      patching this line. Audit confirmed (memory: documenso_paywall_audit.md)
+#      that this is the canonical unlock pattern for self-host.
+#
+# Upstream-merge-fragility: LOW. The line `claim: internalClaims[INTERNAL_CLAIM_ID.FREE]`
+#      is a straightforward default; upstream is unlikely to refactor it unless
+#      they add a new tier above ENTERPRISE. Even then the patch surface is one
+#      line, so manual re-application takes seconds.
+#
+# Status: NOT YET APPLIED — pending day 1 spike confirming vanilla Documenso runs.
+#         Apply with: git apply overlays/001-default-claim-enterprise.patch
+
+--- a/packages/lib/server-only/organisation/create-organisation.ts
++++ b/packages/lib/server-only/organisation/create-organisation.ts
+@@ -169,7 +169,7 @@
+   const claim = customClaim ?? defaultOrganisationClaim;
+
+   const internalClaim = claim ?? {
+-    claim: internalClaims[INTERNAL_CLAIM_ID.FREE],
++    claim: internalClaims[INTERNAL_CLAIM_ID.ENTERPRISE],
+     subscription: null,
+   };
+
