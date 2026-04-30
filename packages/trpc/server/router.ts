@@ -1,3 +1,8 @@
+// MODIFIED for BizRethink: import the bizrethink namespace router. All
+// BizRethink-specific TRPC procedures (Phase B per-org SMTP, Phase C
+// instance signing config, etc.) live under `bizrethink.*`. See overlay 010.
+import { bizrethinkRouter } from '@bizrethink/customizations/server-only/trpc/router';
+
 import { adminRouter } from './admin-router/router';
 import { apiTokenRouter } from './api-token-router/router';
 import { authRouter } from './auth-router/router';
@@ -16,6 +21,9 @@ import { router } from './trpc';
 import { webhookRouter } from './webhook-router/router';
 
 export const appRouter = router({
+  // MODIFIED for BizRethink: bizrethink namespace for additive procedures.
+  // See overlay 010.
+  bizrethink: bizrethinkRouter,
   enterprise: enterpriseRouter,
   envelope: envelopeRouter,
   auth: authRouter,
