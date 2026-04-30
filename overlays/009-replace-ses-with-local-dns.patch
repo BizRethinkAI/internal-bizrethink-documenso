@@ -85,6 +85,19 @@
 # Status: APPLIED 2026-04-30 (after the user opted for Option B in the
 #         email-domain blocker triage; chosen over Option A "provision AWS"
 #         and Option C "skip EmailDomain entirely").
+#
+# Amended same day with a fix for Docker DNS caching: the initial overlay
+# used Node's default `dns.resolveTxt`, which forwards through Docker's
+# embedded resolver at 127.0.0.11. That resolver was returning empty results
+# for the newly-added TXT records — possibly caching an earlier NXDOMAIN or
+# CNAME from a misconfigured DNS state. Switched to an explicit Resolver
+# with public nameservers (Cloudflare 1.1.1.1 and Google 8.8.8.8) which
+# bypass the embedded resolver entirely. Public resolvers respect the
+# record's TTL strictly and avoid the caching pathology. Caught when the
+# user added the correct DKIM TXT in Porkbun, dig from outside the container
+# resolved correctly, but Documenso's verify still showed PENDING. Logged
+# in container: `dns.resolveTxt(selector)` returned `[]` for the same query
+# that Cloudflare returned correctly.
 
 diff --git a/packages/ee/server-only/lib/create-email-domain.ts b/packages/ee/server-only/lib/create-email-domain.ts
 --- a/packages/ee/server-only/lib/create-email-domain.ts
