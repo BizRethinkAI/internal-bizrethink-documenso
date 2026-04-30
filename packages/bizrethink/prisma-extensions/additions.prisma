@@ -15,17 +15,52 @@
 //     any upstream model Documenso may add later.
 //   - Encrypted columns use `String` type (not bytes) because we encrypt with
 //     `NEXT_PRIVATE_ENCRYPTION_KEY` and store the result as base64.
-//   - Foreign-key relations to upstream models (Organisation, User) reference
-//     the upstream tables by name. These FKs are added on the upstream side
-//     by the merge step (since Prisma requires both ends of a relation to be
-//     declared in the same schema). Specifically: when `additions.prisma`
-//     declares a relation to `Organisation`, the merge script must also patch
-//     `Organisation`'s reverse-relation field. Until that's automated, the
-//     reverse-relation field is added manually as a comment in this file and
-//     applied via overlay if/when needed.
-//
-// Empty for now — Phase B/C will populate this with `BizrethinkOrganisationSmtpConfig`
-// and `BizrethinkInstanceSigningConfig` models. The merge mechanism is shipped
-// first as a prerequisite so the schema additions can be added safely.
+//   - Foreign-key relations to upstream models (Organisation, User) use
+//     plain `String` columns WITHOUT a Prisma `@relation` directive. Prisma
+//     requires both ends of a relation to be declared in the same schema,
+//     and adding the reverse-relation field to upstream's `Organisation`
+//     model would mean modifying upstream code. Trade-off: no automatic
+//     cascade behaviour (we handle that manually in code where needed),
+//     no Prisma client `.organisation` accessor on these models. Worth it
+//     to keep the discipline of "upstream files untouched."
 
-// (no models yet — Phase B is the first to add one)
+// ─── Phase B (overlay 010) — per-org SMTP credentials ─────────────────────
+//
+// One row per organisation, holding the SMTP credentials that organisation's
+// outgoing mail authenticates with. Replaces the global `NEXT_PRIVATE_SMTP_*`
+// env vars at the per-org level. Falls back to env-default when no row exists.
+
+model BizrethinkOrganisationSmtpConfig {
+  id             String   @id
+  organisationId String   @unique
+
+  // Mirrors `NEXT_PRIVATE_SMTP_TRANSPORT`. Phase B v1 supports `smtp-auth` only;
+  // future expansion: `smtp-api`, `mailchannels`, `resend` (each adds its own
+  // credential fields, possibly via separate columns or a typed JSON blob).
+  transport String @default("smtp-auth")
+
+  // SMTP-AUTH connection settings (mirrors `NEXT_PRIVATE_SMTP_HOST/PORT/SECURE`).
+  host   String
+  port   Int     @default(587)
+  secure Boolean @default(false)
+
+  // Auth credentials. `password` is ENCRYPTED AT REST with
+  // `NEXT_PRIVATE_ENCRYPTION_KEY` via `symmetricEncrypt`. Decrypt at send time.
+  username String
+  password String
+
+  // Sender identity (mirrors `NEXT_PRIVATE_SMTP_FROM_NAME/FROM_ADDRESS`). The
+  // `fromAddress` should be on a verified EmailDomain for the same org —
+  // we don't enforce that constraint here in Prisma but the admin UI surfaces
+  // a warning if it's not.
+  fromName    String
+  fromAddress String
+
+  // Last "Test connection" attempt — used by the admin UI to show status
+  // without re-running the test on every page load.
+  lastTestedAt  DateTime?
+  lastTestError String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
