@@ -37,14 +37,34 @@
 #      route files frequently — last-touch git log shows email-domains was
 #      added in mid-2025 and the file structure has been stable since.
 #
-# Side note: this is the SAME paywall pattern we'll likely hit again on:
-#        - branding settings UI (`o.$orgUrl.settings.branding.tsx`)
-#        - org-settings layout that may suppress nav links
-#      Audit those as part of cutover prep if branding-per-tenant is needed.
-#      Today, only email-domains is blocking Phase A.
+# Audit results (full sweep done 2026-04-30 same day):
+#
+# Of the 13 IS_BILLING_ENABLED references in apps/remix and packages/lib:
+#   3 needed fixing (this overlay):
+#     - email-domains/_index.tsx (blank page on self-host)
+#     - email-domains/$id.tsx (same)
+#     - settings/_layout.tsx (nav links for /email-domains and /sso hidden
+#       on self-host even when claim flags allow)
+#   10 correctly handle self-host already (skip billing-required steps,
+#     hide billing-only UI, or never trigger on self-host). Notable:
+#     - settings/branding.tsx is fine — its condition
+#       `flag.allowCustomBranding || !IS_BILLING_ENABLED()` correctly shows
+#       the form on self-host
+#     - team-create-dialog, organisation-create-dialog, member-invite-dialog
+#       all correctly skip billing steps when IS_BILLING_ENABLED is false
+#     - embed sign and direct-link routes: gate is `IS_BILLING_ENABLED && !flag`
+#       which never blocks on self-host
+#     - server-side validators (validateIfSubscriptionIsRequired, license
+#       check, team-count check) all early-return on self-host
+#
+# This patch handles the full self-host paywall sweep for email-domains and
+# auth-portal nav. If we add new flags to BIZRETHINK in the future
+# (e.g., HIPAA, allowLegacyEnvelopes), check whether their UI surfaces have
+# similar `!isBillingEnabled || !flag` patterns that need updating.
 #
 # Status: APPLIED 2026-04-30 (Phase A blocker — caught when the user opened
-#         /o/mfg/settings/email-domains and saw a blank page).
+#         /o/mfg/settings/email-domains and saw a blank page; audit + nav
+#         fix added same day after patching the page).
 
 diff --git a/apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.email-domains._index.tsx b/apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.email-domains._index.tsx
 --- a/apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.email-domains._index.tsx
@@ -96,3 +116,33 @@ diff --git a/apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.email-doma
 
    if (isLoadingEmailDomain) {
      return <SpinnerBox className="py-32" />;
+
+diff --git a/apps/remix/app/routes/_authenticated+/o.$orgUrl.settings._layout.tsx b/apps/remix/app/routes/_authenticated+/o.$orgUrl.settings._layout.tsx
+--- a/apps/remix/app/routes/_authenticated+/o.$orgUrl.settings._layout.tsx
++++ b/apps/remix/app/routes/_authenticated+/o.$orgUrl.settings._layout.tsx
+@@ -89,18 +89,16 @@ export default function OrganisationSettingsLayout({ children }: { children: Re
+     if (!isBillingEnabled && route.path.includes('/billing')) {
+       return false;
+     }
+
+-    if (
+-      (!isBillingEnabled || !organisation.organisationClaim.flags.emailDomains) &&
+-      route.path.includes('/email-domains')
+-    ) {
++    // MODIFIED for BizRethink: gate nav links on claim flag ONLY, not on
++    // billing-enabled. On self-host, billing is always disabled but BIZRETHINK
++    // claim has emailDomains + authenticationPortal both true, so the nav
++    // links should appear. See overlays/008.
++    if (!organisation.organisationClaim.flags.emailDomains && route.path.includes('/email-domains')) {
+       return false;
+     }
+
+-    if (
+-      (!isBillingEnabled || !organisation.organisationClaim.flags.authenticationPortal) &&
+-      route.path.includes('/sso')
+-    ) {
++    if (!organisation.organisationClaim.flags.authenticationPortal && route.path.includes('/sso')) {
+       return false;
+     }
+
+     return true;

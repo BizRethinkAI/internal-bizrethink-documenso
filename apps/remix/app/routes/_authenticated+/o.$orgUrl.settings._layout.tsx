@@ -93,17 +93,18 @@ export default function SettingsLayout() {
       return false;
     }
 
+    // MODIFIED for BizRethink: gate nav links on claim flag ONLY, not on
+    // billing-enabled. On self-host, billing is always disabled but BIZRETHINK
+    // claim has emailDomains + authenticationPortal both true, so the nav
+    // links should appear. See overlays/008.
     if (
-      (!isBillingEnabled || !organisation.organisationClaim.flags.emailDomains) &&
+      !organisation.organisationClaim.flags.emailDomains &&
       route.path.includes('/email-domains')
     ) {
       return false;
     }
 
-    if (
-      (!isBillingEnabled || !organisation.organisationClaim.flags.authenticationPortal) &&
-      route.path.includes('/sso')
-    ) {
+    if (!organisation.organisationClaim.flags.authenticationPortal && route.path.includes('/sso')) {
       return false;
     }
 
