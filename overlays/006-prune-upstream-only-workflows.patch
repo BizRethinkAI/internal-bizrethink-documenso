@@ -40,6 +40,14 @@
 #      .github/workflows/first-interaction.yml         (Documenso community)
 #      .github/workflows/pr-labeler.yml                (Documenso labeler)
 #      .github/workflows/stale.yml                     (cron every 8h, marks stale)
+#      .github/workflows/codeql-analysis.yml           (advanced CodeQL — collides
+#                                                      with the repo's default
+#                                                      CodeQL setup; only one
+#                                                      may be active per GitHub
+#                                                      rules. Default is on.
+#                                                      Added in the 2026-04-30
+#                                                      amend after the upload
+#                                                      conflict was diagnosed.)
 #      .github/labeler.yml                             (orphaned config for pr-labeler)
 #
 # Workflows kept and why:
@@ -47,7 +55,6 @@
 #      ci.yml                 — runs npm run build (catches typecheck errors
 #                               before they reach Coolify; would have caught
 #                               overlay 005 v1's tsc failure)
-#      codeql-analysis.yml    — GitHub Advanced Security CodeQL scans
 #      e2e-tests.yml          — Playwright suite (useful before merging
 #                               upstream-sync PRs)
 #      semantic-pull-requests — enforces conventional commits in PR titles;

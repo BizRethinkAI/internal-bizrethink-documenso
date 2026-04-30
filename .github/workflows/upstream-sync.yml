@@ -78,6 +78,7 @@ jobs:
             ".github/workflows/first-interaction.yml"
             ".github/workflows/pr-labeler.yml"
             ".github/workflows/stale.yml"
+            ".github/workflows/codeql-analysis.yml"
             ".github/labeler.yml"
           )
           REMOVED=0
