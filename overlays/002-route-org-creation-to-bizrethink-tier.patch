@@ -1,0 +1,78 @@
+# Why: Three call sites in upstream code hardcode `INTERNAL_CLAIM_ID.FREE` (or
+#      the lowercase shorthand `internalClaims.free`) when creating a new
+#      organisation. For BizRethink self-host these need to point at the new
+#      BIZRETHINK tier (introduced in overlay 001) so every org gets full
+#      feature flags by default. The three paths are:
+#
+#        1. createPersonalOrganisation in
+#           packages/lib/server-only/organisation/create-organisation.ts
+#           — fires automatically when a new user signs up.
+#        2. createOrganisationRoute in
+#           packages/trpc/server/organisation-router/create-organisation.ts
+#           — fires when a user creates an org via the UI.
+#        3. createAdminOrganisationRoute in
+#           packages/trpc/server/admin-router/create-admin-organisation.ts
+#           — fires when an admin creates an org via the admin panel.
+#
+#      Patching only one path leaves the other two on FREE; we need all three.
+#
+# Why-not-additive: Each of the three call sites is in upstream code that we
+#      neither own nor can wrap. There's no DI hook or env-var indirection for
+#      "which claim does a new org get." Each is a one-line substitution; the
+#      admin route also needs an import to expose INTERNAL_CLAIM_ID.
+#
+# Upstream-merge-fragility: LOW. Each change is a single token swap on a
+#      well-named line. Even if upstream refactors a callsite, re-anchoring is
+#      mechanical (look for `internalClaims[INTERNAL_CLAIM_ID.FREE]` near
+#      `createOrganisation({` and substitute BIZRETHINK).
+#
+# Status: APPLIED 2026-04-29.
+
+diff --git a/packages/lib/server-only/organisation/create-organisation.ts b/packages/lib/server-only/organisation/create-organisation.ts
+index 2bbcc582b..bb5c81897 100644
+--- a/packages/lib/server-only/organisation/create-organisation.ts
++++ b/packages/lib/server-only/organisation/create-organisation.ts
+@@ -169,7 +169,7 @@ export const createPersonalOrganisation = async ({
+     userId,
+     url: orgUrl,
+     type,
+-    claim: internalClaims[INTERNAL_CLAIM_ID.FREE],
++    claim: internalClaims[INTERNAL_CLAIM_ID.BIZRETHINK],
+   }).catch((err) => {
+     console.error(err);
+
+diff --git a/packages/trpc/server/admin-router/create-admin-organisation.ts b/packages/trpc/server/admin-router/create-admin-organisation.ts
+index e20df8854..ba68e2993 100644
+--- a/packages/trpc/server/admin-router/create-admin-organisation.ts
++++ b/packages/trpc/server/admin-router/create-admin-organisation.ts
+@@ -1,7 +1,7 @@
+ import { OrganisationType } from '@prisma/client';
+
+ import { createOrganisation } from '@documenso/lib/server-only/organisation/create-organisation';
+-import { internalClaims } from '@documenso/lib/types/subscription';
++import { INTERNAL_CLAIM_ID, internalClaims } from '@documenso/lib/types/subscription';
+
+ import { adminProcedure } from '../trpc';
+ import {
+@@ -25,7 +25,7 @@ export const createAdminOrganisationRoute = adminProcedure
+       userId: ownerUserId,
+       name: data.name,
+       type: OrganisationType.ORGANISATION,
+-      claim: internalClaims.free,
++      claim: internalClaims[INTERNAL_CLAIM_ID.BIZRETHINK],
+     });
+
+     return {
+diff --git a/packages/trpc/server/organisation-router/create-organisation.ts b/packages/trpc/server/organisation-router/create-organisation.ts
+index c4c02f9df..d1e4d8e1b 100644
+--- a/packages/trpc/server/organisation-router/create-organisation.ts
++++ b/packages/trpc/server/organisation-router/create-organisation.ts
+@@ -76,7 +76,7 @@ export const createOrganisationRoute = authenticatedProcedure
+       userId: user.id,
+       name,
+       type: organisationType,
+-      claim: internalClaims[INTERNAL_CLAIM_ID.FREE],
++      claim: internalClaims[INTERNAL_CLAIM_ID.BIZRETHINK],
+     });
+
+     return {

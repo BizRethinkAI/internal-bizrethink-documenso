@@ -38,3 +38,42 @@ packages/bizrethink/
 ## Why this discipline matters
 
 Solo dev. Weekly upstream sync. Every modification of an upstream file is a future merge conflict. Every additive file in this package costs zero merge debt. Trade aggressively in favor of additive.
+
+## Production deploy: BIZRETHINK SubscriptionClaim row
+
+Overlay 001 adds `BIZRETHINK` to the TypeScript `internalClaims` map; overlay 002 routes all org-creation paths through it. **Org creation works without anything else** — `OrganisationClaim.originalSubscriptionClaimId` is a plain `String?` with no FK relation, so a missing `SubscriptionClaim` row doesn't cause an insert failure.
+
+However, the admin tier-management UI (`/admin/subscription-claims`) reads from the `SubscriptionClaim` table. Without the row, BIZRETHINK won't appear there. Run this SQL once after the first deploy to a fresh DB:
+
+```sql
+INSERT INTO "SubscriptionClaim"
+  ("id", "name", "locked", "teamCount", "memberCount", "envelopeItemCount", "flags", "createdAt", "updatedAt")
+VALUES (
+  'bizrethink',
+  'BizRethink',
+  true,
+  0,                  -- unlimited teams
+  0,                  -- unlimited members
+  10,
+  '{
+    "unlimitedDocuments": true,
+    "allowCustomBranding": true,
+    "hidePoweredBy": true,
+    "emailDomains": true,
+    "embedAuthoring": true,
+    "embedAuthoringWhiteLabel": true,
+    "embedSigning": true,
+    "embedSigningWhiteLabel": true,
+    "cfr21": true,
+    "authenticationPortal": true,
+    "signingReminders": true
+  }'::jsonb,
+  NOW(),
+  NOW()
+)
+ON CONFLICT ("id") DO NOTHING;
+```
+
+`ON CONFLICT DO NOTHING` makes it safe to re-run. To **update** flags after they've drifted (e.g. after enabling HIPAA later), use the admin UI's `update-subscription-claim` route — that path also enqueues the `backport-subscription-claims` job which propagates the new flags to existing `OrganisationClaim` rows.
+
+**Where to run it:** Coolify dashboard → the Postgres service → "Connect" / "Terminal", or any psql connection with the production DATABASE_URL. Document the exact run in your deployment log.

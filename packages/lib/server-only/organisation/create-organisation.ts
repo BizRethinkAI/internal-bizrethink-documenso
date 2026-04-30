@@ -169,7 +169,7 @@ export const createPersonalOrganisation = async ({
     userId,
     url: orgUrl,
     type,
-    claim: internalClaims[INTERNAL_CLAIM_ID.FREE],
+    claim: internalClaims[INTERNAL_CLAIM_ID.BIZRETHINK],
   }).catch((err) => {
     console.error(err);
 

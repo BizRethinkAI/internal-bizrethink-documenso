@@ -76,7 +76,7 @@ export const createOrganisationRoute = authenticatedProcedure
       userId: user.id,
       name,
       type: organisationType,
-      claim: internalClaims[INTERNAL_CLAIM_ID.FREE],
+      claim: internalClaims[INTERNAL_CLAIM_ID.BIZRETHINK],
     });
 
     return {
