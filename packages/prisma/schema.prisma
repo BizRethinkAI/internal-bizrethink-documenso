@@ -1121,3 +1121,41 @@ model RateLimit {
   @@id([key, action, bucket])
   @@index([createdAt])
 }
+
+// BIZRETHINK_ADDITIONS_BEGIN — managed by packages/bizrethink/prisma-extensions/merge-into-schema.mjs
+// DO NOT EDIT BY HAND. Edit packages/bizrethink/prisma-extensions/additions.prisma
+// then run: npm run prisma:merge-additions (or trigger any prisma script in this package).
+
+// BizRethink-specific Prisma model additions.
+//
+// This file is the SINGLE SOURCE OF TRUTH for all custom DB tables added by
+// BizRethink on top of Documenso's upstream schema. It is NEVER concatenated
+// directly into Prisma's schema by hand — instead, `merge-into-schema.mjs`
+// reads this file and appends its contents into `packages/prisma/schema.prisma`
+// between marker comments at build time. Running `merge-into-schema.mjs` is
+// idempotent: it strips any existing marker block before re-appending.
+//
+// Wired in via overlay 007 — `packages/prisma/package.json` calls this merge
+// script before every `prisma generate`.
+//
+// Conventions:
+//   - All model names are prefixed with `Bizrethink` to avoid collision with
+//     any upstream model Documenso may add later.
+//   - Encrypted columns use `String` type (not bytes) because we encrypt with
+//     `NEXT_PRIVATE_ENCRYPTION_KEY` and store the result as base64.
+//   - Foreign-key relations to upstream models (Organisation, User) reference
+//     the upstream tables by name. These FKs are added on the upstream side
+//     by the merge step (since Prisma requires both ends of a relation to be
+//     declared in the same schema). Specifically: when `additions.prisma`
+//     declares a relation to `Organisation`, the merge script must also patch
+//     `Organisation`'s reverse-relation field. Until that's automated, the
+//     reverse-relation field is added manually as a comment in this file and
+//     applied via overlay if/when needed.
+//
+// Empty for now — Phase B/C will populate this with `BizrethinkOrganisationSmtpConfig`
+// and `BizrethinkInstanceSigningConfig` models. The merge mechanism is shipped
+// first as a prerequisite so the schema additions can be added safely.
+
+// (no models yet — Phase B is the first to add one)
+
+// BIZRETHINK_ADDITIONS_END

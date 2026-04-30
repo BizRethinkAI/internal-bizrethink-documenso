@@ -1,0 +1,74 @@
+# Why: BizRethink needs to add Prisma models without modifying upstream's
+#      packages/prisma/schema.prisma directly. Per the discipline conventions
+#      in CLAUDE.md, schema additions live in
+#      packages/bizrethink/prisma-extensions/additions.prisma, but the
+#      directory and merge mechanism didn't actually exist — the convention
+#      was aspirational. This overlay ships the prerequisite so Phase B
+#      (per-org SMTP) and Phase C (instance signing config) can add their
+#      tables.
+#
+#      Mechanism:
+#        1. NEW: packages/bizrethink/prisma-extensions/additions.prisma
+#           — single source of truth for our model additions (currently
+#           empty; Phase B adds the first model)
+#        2. NEW: packages/bizrethink/prisma-extensions/merge-into-schema.mjs
+#           — Node script that reads additions.prisma + appends its content
+#           into packages/prisma/schema.prisma between marker comments
+#           (BIZRETHINK_ADDITIONS_BEGIN / END). Idempotent.
+#        3. PATCH (this overlay): packages/prisma/package.json — wire the
+#           merge script into the build/prebuild/post-install/prisma:generate/
+#           prisma:migrate-dev/prisma:migrate-deploy scripts so Prisma always
+#           sees the merged schema.
+#
+#      The merge runs in-place against schema.prisma. After a build, git
+#      shows schema.prisma as modified (the appended marker block). For solo
+#      dev this hygiene cost is acceptable; if it becomes annoying, a follow-up
+#      can either add a post-build cleanup step OR switch to a separate
+#      .merged-schema.prisma path with --schema flags everywhere.
+#
+# Why-not-additive: package.json scripts CAN'T be extended additively from a
+#      separate package — npm runs the literal command in the upstream
+#      package.json. We have to overlay-patch this file. The patch surface is
+#      tiny (one new key + 6 modified script values), so merge friction is
+#      minimal.
+#
+# Upstream-merge-fragility: LOW. Documenso doesn't change packages/prisma/
+#      package.json scripts often (last commit to the file: confirm via
+#      `git log -- packages/prisma/package.json` during the next sync). Our
+#      patch only PREPENDS a step to existing scripts; merging an upstream
+#      script change keeps our prefix. The new `bizrethink:merge-additions`
+#      key sits alphabetically with the other scripts and won't conflict.
+#
+# Side note: we intentionally do NOT prepend the merge to `format`, `clean`,
+#      `prisma:migrate-reset`, `prisma:seed`, or `prisma:studio`. Those are
+#      manual operations (or destructive) and don't depend on the merged
+#      schema. Avoids running merge unnecessarily on prisma format / studio.
+#
+# Status: APPLIED 2026-04-30 (after the env-var plan was approved; this is
+#         the prerequisite for Phase B / overlay 008 / overlay 009).
+
+diff --git a/packages/prisma/package.json b/packages/prisma/package.json
+--- a/packages/prisma/package.json
++++ b/packages/prisma/package.json
+@@ -5,12 +5,13 @@
+   "types": "./index.ts",
+   "license": "MIT",
+   "scripts": {
+-    "build": "prisma generate",
+-    "prebuild": "prisma generate",
++    "bizrethink:merge-additions": "node ../bizrethink/prisma-extensions/merge-into-schema.mjs",
++    "build": "npm run bizrethink:merge-additions && prisma generate",
++    "prebuild": "npm run bizrethink:merge-additions && prisma generate",
+     "format": "prisma format",
+     "clean": "rimraf node_modules",
+-    "post-install": "prisma generate",
+-    "prisma:generate": "prisma generate",
+-    "prisma:migrate-dev": "prisma migrate dev --skip-seed",
+-    "prisma:migrate-deploy": "prisma migrate deploy",
++    "post-install": "npm run bizrethink:merge-additions && prisma generate",
++    "prisma:generate": "npm run bizrethink:merge-additions && prisma generate",
++    "prisma:migrate-dev": "npm run bizrethink:merge-additions && prisma migrate dev --skip-seed",
++    "prisma:migrate-deploy": "npm run bizrethink:merge-additions && prisma migrate deploy",
+     "prisma:migrate-reset": "prisma migrate reset",
+     "prisma:seed": "prisma db seed",
+     "prisma:studio": "prisma studio"
