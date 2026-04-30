@@ -37,30 +37,46 @@
 #      route files frequently — last-touch git log shows email-domains was
 #      added in mid-2025 and the file structure has been stable since.
 #
-# Audit results (full sweep done 2026-04-30 same day):
+# Audit results (full sweep done 2026-04-30 same day, then re-extended after
+# the user hit a backend error trying to add a domain):
 #
-# Of the 13 IS_BILLING_ENABLED references in apps/remix and packages/lib:
-#   3 needed fixing (this overlay):
+# Frontend audit (apps/remix): 13 IS_BILLING_ENABLED references.
+#   3 needed fixing (in this overlay):
 #     - email-domains/_index.tsx (blank page on self-host)
 #     - email-domains/$id.tsx (same)
 #     - settings/_layout.tsx (nav links for /email-domains and /sso hidden
 #       on self-host even when claim flags allow)
-#   10 correctly handle self-host already (skip billing-required steps,
-#     hide billing-only UI, or never trigger on self-host). Notable:
-#     - settings/branding.tsx is fine — its condition
-#       `flag.allowCustomBranding || !IS_BILLING_ENABLED()` correctly shows
-#       the form on self-host
-#     - team-create-dialog, organisation-create-dialog, member-invite-dialog
-#       all correctly skip billing steps when IS_BILLING_ENABLED is false
-#     - embed sign and direct-link routes: gate is `IS_BILLING_ENABLED && !flag`
-#       which never blocks on self-host
-#     - server-side validators (validateIfSubscriptionIsRequired, license
-#       check, team-count check) all early-return on self-host
+#   10 correctly handle self-host already.
 #
-# This patch handles the full self-host paywall sweep for email-domains and
-# auth-portal nav. If we add new flags to BIZRETHINK in the future
-# (e.g., HIPAA, allowLegacyEnvelopes), check whether their UI surfaces have
-# similar `!isBillingEnabled || !flag` patterns that need updating.
+# Backend audit (packages/trpc/server/enterprise-router/): 8 references.
+#   4 needed fixing (in this overlay, added after frontend deploy):
+#     - create-organisation-email-domain.ts
+#     - delete-organisation-email-domain.ts
+#     - verify-organisation-email-domain.ts
+#     - update-organisation-authentication-portal.ts
+#   All four threw "Billing is not enabled" before reaching their downstream
+#   claim-flag and authorization checks, blocking the feature on self-host
+#   even though the claim allows it. The downstream gates (organisation
+#   membership + claim flag check) are the correct authorization layer.
+#   4 correctly KEPT as-is (legitimate billing flows that would fail on
+#   self-host anyway):
+#     - manage-subscription.ts (Stripe portal session)
+#     - create-subscription.ts (Stripe checkout session)
+#     - get-subscription.ts (Stripe subscription fetch)
+#     - get-invoices.ts (Stripe invoices list)
+#
+# Total: 7 file edits in overlay 008 (3 frontend + 4 backend), all the same
+# "remove redundant billing check, downstream gate is correct" pattern.
+#
+# Lesson learned: `IS_BILLING_ENABLED` is used as a paywall gate at BOTH
+# frontend (UI hide/show) AND backend (TRPC mutation early-throw) layers in
+# Documenso. Auditing only one layer leaves a half-fixed feature. Always
+# `grep -rn "IS_BILLING_ENABLED"` across both `apps/` and `packages/trpc/` —
+# the frontend gates 13 sites, the backend gates 8.
+#
+# If we add new flags to BIZRETHINK in the future (e.g., HIPAA,
+# allowLegacyEnvelopes), audit BOTH layers for `!IS_BILLING_ENABLED` checks
+# that should be claim-flag-only.
 #
 # Status: APPLIED 2026-04-30 (Phase A blocker — caught when the user opened
 #         /o/mfg/settings/email-domains and saw a blank page; audit + nav

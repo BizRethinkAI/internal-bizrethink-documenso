@@ -1,4 +1,3 @@
-import { IS_BILLING_ENABLED } from '@documenso/lib/constants/app';
 import { DOCUMENSO_ENCRYPTION_KEY } from '@documenso/lib/constants/crypto';
 import { ORGANISATION_MEMBER_ROLE_PERMISSIONS_MAP } from '@documenso/lib/constants/organisations';
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
@@ -25,11 +24,10 @@ export const updateOrganisationAuthenticationPortalRoute = authenticatedProcedur
       },
     });
 
-    if (!IS_BILLING_ENABLED()) {
-      throw new AppError(AppErrorCode.INVALID_REQUEST, {
-        message: 'Billing is not enabled',
-      });
-    }
+    // MODIFIED for BizRethink: removed `if (!IS_BILLING_ENABLED()) throw …`
+    // — on self-host, billing is always disabled but the BIZRETHINK claim has
+    // authenticationPortal: true. The downstream claim-flag check is the
+    // correct gate. See overlays/008.
 
     const organisation = await prisma.organisation.findFirst({
       where: buildOrganisationWhereQuery({

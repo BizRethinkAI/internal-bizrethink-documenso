@@ -1,5 +1,4 @@
 import { deleteEmailDomain } from '@documenso/ee/server-only/lib/delete-email-domain';
-import { IS_BILLING_ENABLED } from '@documenso/lib/constants/app';
 import { ORGANISATION_MEMBER_ROLE_PERMISSIONS_MAP } from '@documenso/lib/constants/organisations';
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { buildOrganisationWhereQuery } from '@documenso/lib/utils/organisations';
@@ -24,11 +23,10 @@ export const deleteOrganisationEmailDomainRoute = authenticatedProcedure
       },
     });
 
-    if (!IS_BILLING_ENABLED()) {
-      throw new AppError(AppErrorCode.INVALID_REQUEST, {
-        message: 'Billing is not enabled',
-      });
-    }
+    // MODIFIED for BizRethink: removed `if (!IS_BILLING_ENABLED()) throw …`
+    // — on self-host, billing is always disabled. The downstream organisation-
+    // membership check via buildOrganisationWhereQuery is the real authorization
+    // gate. See overlays/008.
 
     const emailDomain = await prisma.emailDomain.findFirst({
       where: {
