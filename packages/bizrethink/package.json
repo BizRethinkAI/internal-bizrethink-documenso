@@ -12,7 +12,11 @@
     "feature-flags.ts",
     "index.ts"
   ],
-  "dependencies": {},
+  "dependencies": {
+    "@documenso/email": "*",
+    "@documenso/lib": "*",
+    "@documenso/prisma": "*"
+  },
   "devDependencies": {
     "@documenso/tsconfig": "*"
   }
