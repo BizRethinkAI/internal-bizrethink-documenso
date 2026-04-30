@@ -14,14 +14,26 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 //   - Async-aware (propagates through await boundaries automatically)
 //   - Falls through to env-default mailer cleanly when ALS is empty
 //
-// Trade-off: code paths that DON'T go through getEmailContext (rare;
-// internal/system emails) get the env-default mailer regardless of which
-// org they're nominally about. Acceptable for v1 — if this becomes a real
-// problem, callers can wrap their async work in
-// `orgContextStorage.run({ orgId }, async () => ...)` explicitly.
+// Why globalThis singleton:
+//   The Remix/vite bundler emits MULTIPLE COPIES of this module
+//   (build/server/assets/org-context-*.js + build/server/hono/...). Each
+//   copy gets its own AsyncLocalStorage instance, so `enterWith` on one
+//   instance is invisible to `getStore` on the other. Pin the instance
+//   to globalThis so all copies see the same storage. Verified failure
+//   mode: shipped 2026-04-30 v1 with naive `new AsyncLocalStorage()` —
+//   ALS appeared not to propagate; Postmark Activity log showed all org
+//   mail going through env-default account regardless of per-org SMTP
+//   config. Fixed by this globalThis pattern.
 
 export type OrgContext = {
   orgId: string | undefined;
 };
 
-export const orgContextStorage = new AsyncLocalStorage<OrgContext>();
+declare global {
+  // eslint-disable-next-line no-var
+  var __bizrethinkOrgContextStorage: AsyncLocalStorage<OrgContext> | undefined;
+}
+
+export const orgContextStorage: AsyncLocalStorage<OrgContext> =
+  globalThis.__bizrethinkOrgContextStorage ??
+  (globalThis.__bizrethinkOrgContextStorage = new AsyncLocalStorage<OrgContext>());
