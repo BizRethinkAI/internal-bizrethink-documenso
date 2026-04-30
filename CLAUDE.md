@@ -51,7 +51,7 @@ internal-bizrethink-documenso/
 
 ## Stack (inherited from Documenso)
 
-- **Monorepo:** pnpm workspaces (`apps/*`, `packages/*`)
+- **Monorepo:** npm workspaces (`apps/*`, `packages/*`) — Documenso uses npm despite the master CLAUDE.md preference for pnpm; do NOT switch package manager without coordinating an upstream-merge plan
 - **Web framework:** Remix (React-based, similar to Next.js)
 - **ORM:** Prisma + PostgreSQL
 - **API:** tRPC for internal, REST for public (`/api/v2/*`)
@@ -108,7 +108,7 @@ That's it. See `overlays/README.md` for status.
 
 - TypeScript everywhere (already satisfied — Documenso is TS)
 - Tailwind only for styling (already satisfied)
-- pnpm package manager (already satisfied)
+- npm package manager (Documenso uses npm; the master BizRethink stack prefers pnpm but switching here would fight every upstream sync)
 - Conventional commits where possible
 - No secrets in code or logs
 - Coolify env vars hold all production secrets, never in repo
