@@ -37,3 +37,17 @@ declare global {
 export const orgContextStorage: AsyncLocalStorage<OrgContext> =
   globalThis.__bizrethinkOrgContextStorage ??
   (globalThis.__bizrethinkOrgContextStorage = new AsyncLocalStorage<OrgContext>());
+
+// DEBUG (Phase B Diagnostic — strip after bisection): tag the instance with
+// a unique 6-char id at module-init so we can detect whether multiple
+// bundled module copies actually share the singleton, vs each evaluating
+// the file independently and creating distinct ALS instances.
+if (!(orgContextStorage as unknown as { __id?: string }).__id) {
+  (orgContextStorage as unknown as { __id: string }).__id = Math.random().toString(36).slice(2, 8);
+}
+// eslint-disable-next-line no-console
+console.log('[bizrethink][als-init]', {
+  id: (orgContextStorage as unknown as { __id: string }).__id,
+  hasGlobal: !!globalThis.__bizrethinkOrgContextStorage,
+  pid: process.pid,
+});

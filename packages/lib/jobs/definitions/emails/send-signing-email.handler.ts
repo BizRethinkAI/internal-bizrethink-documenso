@@ -1,5 +1,9 @@
 import { createElement } from 'react';
 
+// DEBUG (Phase B Diagnostic — strip after bisection): import the ALS so
+// we can probe its store IMMEDIATELY before and inside the io.runTask
+// callback, isolating where ALS context is lost.
+import { orgContextStorage } from '@bizrethink/customizations/server-only/org-context';
 import { msg } from '@lingui/core/macro';
 import {
   DocumentSource,
@@ -180,7 +184,21 @@ export const run = async ({
   });
 
   if (isRecipientEmailValidForSending(recipient)) {
+    // DEBUG (Phase B Diagnostic — strip after bisection): pre-runTask probe.
+    // eslint-disable-next-line no-console
+    console.log('[bizrethink][debug] pre-runTask', {
+      store: orgContextStorage.getStore(),
+      alsId: (orgContextStorage as unknown as { __id?: string }).__id,
+      pid: process.pid,
+    });
     await io.runTask('send-signing-email', async () => {
+      // DEBUG (Phase B Diagnostic — strip after bisection): inside-runTask probe.
+      // eslint-disable-next-line no-console
+      console.log('[bizrethink][debug] inside-runTask', {
+        store: orgContextStorage.getStore(),
+        alsId: (orgContextStorage as unknown as { __id?: string }).__id,
+        pid: process.pid,
+      });
       const [html, text] = await Promise.all([
         renderEmailWithI18N(template, { lang: emailLanguage, branding }),
         renderEmailWithI18N(template, {

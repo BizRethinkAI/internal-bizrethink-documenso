@@ -133,13 +133,22 @@ export const mailer = new Proxy(envDefaultMailer, {
         );
         const ctx = orgContextStorage.getStore();
 
-        // DEBUG (overlay 010 troubleshooting): trace ALS read at sendMail time.
-        // Remove after Phase B verification.
+        // DEBUG (Phase B Diagnostic — strip after bisection): trace ALS
+        // read + payload shape at sendMail time. The alsId lets us match
+        // this Proxy invocation to the getEmailContext.enterWith log via
+        // instance identity. htmlLen/textLen confirm the Proxy isn't
+        // stripping payload fields (Bug B-2).
         // eslint-disable-next-line no-console
         console.log('[bizrethink][debug] mailer.sendMail proxy', {
           ctxOrgId: ctx?.orgId,
           ctxIsSet: !!ctx,
           dispatch: ctx?.orgId ? 'per-org' : 'env-default',
+          alsId: (orgContextStorage as unknown as { __id?: string }).__id,
+          htmlLen: opts.html?.toString().length ?? 0,
+          textLen: opts.text?.toString().length ?? 0,
+          subjectHead: opts.subject?.slice(0, 40),
+          fromAddr: typeof opts.from === 'string' ? opts.from : opts.from?.address,
+          pid: process.pid,
         });
 
         if (ctx?.orgId) {

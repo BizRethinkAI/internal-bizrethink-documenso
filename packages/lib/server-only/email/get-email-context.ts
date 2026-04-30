@@ -108,12 +108,15 @@ export const getEmailContext = async (
       '@bizrethink/customizations/server-only/org-context'
     );
     orgContextStorage.enterWith({ orgId: resolvedOrgId });
-    // DEBUG (overlay 010 troubleshooting): confirm enterWith ran + check
-    // ALS singleton identity. Remove after Phase B verification.
+    // DEBUG (Phase B Diagnostic — strip after bisection): emit the tagged
+    // ALS instance id so we can correlate enterWith → mailer.sendMail proxy
+    // reads. If alsIds differ across log lines the singleton is broken.
     // eslint-disable-next-line no-console
     console.log('[bizrethink][debug] getEmailContext.enterWith', {
       orgId: resolvedOrgId,
-      alsId: (orgContextStorage as unknown as { _alsId?: string })._alsId ?? 'n/a',
+      alsId: (orgContextStorage as unknown as { __id?: string }).__id,
+      storeAfter: orgContextStorage.getStore(),
+      pid: process.pid,
     });
   }
 
