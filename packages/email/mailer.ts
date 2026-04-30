@@ -133,6 +133,15 @@ export const mailer = new Proxy(envDefaultMailer, {
         );
         const ctx = orgContextStorage.getStore();
 
+        // DEBUG (overlay 010 troubleshooting): trace ALS read at sendMail time.
+        // Remove after Phase B verification.
+        // eslint-disable-next-line no-console
+        console.log('[bizrethink][debug] mailer.sendMail proxy', {
+          ctxOrgId: ctx?.orgId,
+          ctxIsSet: !!ctx,
+          dispatch: ctx?.orgId ? 'per-org' : 'env-default',
+        });
+
         if (ctx?.orgId) {
           const { getMailerForOrg } = await import(
             '@bizrethink/customizations/server-only/per-org-mailer'
