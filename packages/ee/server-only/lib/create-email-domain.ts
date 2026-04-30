@@ -111,17 +111,13 @@ export const createEmailDomain = async ({ domain, organisationId }: CreateEmailD
     data: privateKeyFlattened,
   });
 
-  // Verify domain with SES outside a transaction to avoid holding a
-  // connection open during the external API call.
-  await verifyDomainWithDKIM(domain, selector, privateKeyFlattened).catch((err) => {
-    if (err.name === 'AlreadyExistsException') {
-      throw new AppError(AppErrorCode.ALREADY_EXISTS, {
-        message: 'Domain already exists in SES',
-      });
-    }
-
-    throw err;
-  });
+  // MODIFIED for BizRethink: removed the AWS SES `CreateEmailIdentityCommand`
+  // call. SES was being used purely as a DKIM-record-tracker middleman;
+  // BizRethink does not send mail through SES (Postmark handles all sending).
+  // The DB row is created with PENDING status below; verifyEmailDomain (in
+  // verify-email-domain.ts) does a local DNS TXT lookup instead of polling
+  // SES. Same domain-ownership security guarantee as before — DNS resolution
+  // is the actual proof of zone control. See overlays/009.
 
   const emailDomain = await prisma.emailDomain.create({
     data: {
