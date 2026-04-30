@@ -1,0 +1,47 @@
+# Why: Overlays 001+002 add the BIZRETHINK tier to INTERNAL_CLAIM_ID. Several
+#      upstream files use mapped types like `{ [key in INTERNAL_CLAIM_ID]: ... }`
+#      which TypeScript treats as Record<...> with all enum keys required.
+#      Adding BIZRETHINK to the enum makes any such map missing a `bizrethink`
+#      entry fail tsc.
+#
+#      Audit (grep across apps/* and packages/*) found exactly ONE such map
+#      that needed updating: `internalClaimsDescription` in
+#      apps/remix/app/components/dialogs/organisation-create-dialog.tsx (line
+#      ~275). It maps each INTERNAL_CLAIM_ID to a billing-plan description shown
+#      in the user-facing org-creation dialog. Other places that mention
+#      INTERNAL_CLAIM_ID either (a) use it for runtime equality checks (no type
+#      enforcement issue), or (b) clone `internalClaims` at runtime which
+#      already includes BIZRETHINK from overlay 001.
+#
+# Why-not-additive: This is a typed object literal in upstream UI code with
+#      no extension point. The only way to add a key is to edit the literal.
+#
+# Upstream-merge-fragility: LOW. Five new lines (1 entry + 4 comment) appended
+#      to an existing list. Conflicts with upstream only if the file is
+#      removed or the description map is removed/restructured — both
+#      unlikely without obvious upstream signal during the weekly sync.
+#
+# Self-host visibility: BIZRETHINK is intentionally not user-selectable from
+#      the billing UI (self-host has no billing). The empty description is
+#      cosmetic and never shown — the dialog filters dynamicPlans to
+#      [INDIVIDUAL, TEAM, PLATFORM] explicitly (line ~304).
+#
+# Status: APPLIED 2026-04-30 (caught during second Coolify deploy attempt
+#         after overlay 003 unblocked the OOM).
+
+diff --git a/apps/remix/app/components/dialogs/organisation-create-dialog.tsx b/apps/remix/app/components/dialogs/organisation-create-dialog.tsx
+index 6237c0dd6..ce694605c 100644
+--- a/apps/remix/app/components/dialogs/organisation-create-dialog.tsx
++++ b/apps/remix/app/components/dialogs/organisation-create-dialog.tsx
+@@ -281,6 +281,11 @@ const internalClaimsDescription: {
+   [INTERNAL_CLAIM_ID.PLATFORM]: msg`Whitelabeling, unlimited members and more`,
+   [INTERNAL_CLAIM_ID.ENTERPRISE]: '',
+   [INTERNAL_CLAIM_ID.EARLY_ADOPTER]: '',
++  // MODIFIED for BizRethink: BIZRETHINK tier doesn't surface in the user-facing
++  // billing-plan picker (self-host has no billing UI), but the type requires
++  // every INTERNAL_CLAIM_ID key to be present. Empty description is fine.
++  // See overlays/004.
++  [INTERNAL_CLAIM_ID.BIZRETHINK]: '',
+ };
+
+ type BillingPlanFormProps = {
