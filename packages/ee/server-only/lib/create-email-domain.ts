@@ -69,7 +69,13 @@ export const createEmailDomain = async ({ domain, organisationId }: CreateEmailD
   }
 
   const selector = `documenso-${organisationId}`.replace(/[_.]/g, '-');
-  const recordName = `${selector}._domainkey.${domain}`;
+  // MODIFIED for BizRethink: split the FQDN into the user-facing display
+  // name (without the zone suffix, e.g., `documenso-org-X._domainkey`) and
+  // the full FQDN stored in DB for DNS lookups. Most DNS providers (Porkbun,
+  // Cloudflare, Route53) auto-append the zone in their UI, so showing the
+  // full FQDN to the user invites the doubled-zone bug. See overlays/009.
+  const recordDisplayName = `${selector}._domainkey`;
+  const recordName = `${recordDisplayName}.${domain}`;
 
   // Check if domain already exists
   const existingDomain = await prisma.emailDomain.findUnique({
@@ -103,8 +109,11 @@ export const createEmailDomain = async ({ domain, organisationId }: CreateEmailD
   const publicKeyFlattened = flattenKey(publicKey);
   const privateKeyFlattened = flattenKey(privateKey);
 
-  // Create DNS records
-  const records: DomainRecord[] = generateEmailDomainRecords(recordName, publicKeyFlattened);
+  // Create DNS records — pass the SHORT display name to the generator so
+  // the user pastes `documenso-org-X._domainkey` (not the full FQDN) into
+  // their DNS provider. The full FQDN is stored separately in `selector`
+  // below for DNS-lookup verification.
+  const records: DomainRecord[] = generateEmailDomainRecords(recordDisplayName, publicKeyFlattened);
 
   const encryptedPrivateKey = symmetricEncrypt({
     key: encryptionKey,

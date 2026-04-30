@@ -131,7 +131,15 @@ export default function OrganisationEmailDomainSettingsPage({ params }: Route.Co
     );
   }
 
-  const records = generateEmailDomainRecords(emailDomain.selector, emailDomain.publicKey);
+  // MODIFIED for BizRethink: strip the `.${domain}` suffix from the stored
+  // selector before showing it to the user — most DNS providers (Porkbun,
+  // Cloudflare, Route53) auto-append the zone, so a user pasting the full
+  // FQDN gets a doubled-zone record. The DB still stores the full FQDN for
+  // DNS-lookup verification. See overlays/009.
+  const recordDisplayName = emailDomain.selector.endsWith(`.${emailDomain.domain}`)
+    ? emailDomain.selector.slice(0, -(emailDomain.domain.length + 1))
+    : emailDomain.selector;
+  const records = generateEmailDomainRecords(recordDisplayName, emailDomain.publicKey);
 
   return (
     <div>
