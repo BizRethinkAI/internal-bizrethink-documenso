@@ -64,6 +64,13 @@ export default function SettingsLayout() {
       icon: MailboxIcon,
     },
     {
+      // Phase B (overlay 010): per-org SMTP credentials. Always visible —
+      // BizRethink-specific feature, not gated by upstream claim flags.
+      path: `/o/${organisation.url}/settings/smtp`,
+      label: t`SMTP`,
+      icon: MailboxIcon,
+    },
+    {
       path: `/o/${organisation.url}/settings/teams`,
       label: t`Teams`,
       icon: FaUsers,
