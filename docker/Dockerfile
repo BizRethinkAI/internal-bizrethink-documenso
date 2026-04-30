@@ -81,6 +81,10 @@ COPY turbo.json turbo.json
 
 RUN npm install -g "turbo@^1.9.3"
 
+# MODIFIED for BizRethink: raise Node heap during build (default 1GB is too small
+# for monorepo tsc + react-router build). See overlays/003.
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
 RUN turbo run build --filter=@documenso/remix...
 
 ###########################
