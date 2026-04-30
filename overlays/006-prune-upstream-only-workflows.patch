@@ -1,0 +1,124 @@
+# Why: Documenso ships ~16 GitHub Actions workflows in `.github/workflows/`.
+#      Most of them are tied to upstream's project infrastructure (Crowdin
+#      translations, DockerHub publish, opinionated PR/issue labelers, stale
+#      bot, tag-based deploy) and have no purpose on a self-host fork that:
+#        - has no Crowdin project (translations workflows fail on every push)
+#        - doesn't publish images to DockerHub (Coolify builds locally)
+#        - has a single dev maintaining it (PR/issue labelers are noise)
+#        - deploys via Coolify on push to main (deploy.yml's tag flow is unused)
+#
+#      The user-visible symptom: every push to main triggers ~3 failed
+#      workflows. Every 2 hours, the translations-pull cron also fails. The
+#      failure emails accumulate.
+#
+#      Two-part fix:
+#        1. DELETE the offending workflow files in our tree (12 workflows +
+#           1 orphaned labeler.yml config that pr-labeler.yml referenced).
+#        2. EXTEND `.github/workflows/upstream-sync.yml` with a post-merge
+#           "Re-prune upstream-only workflow files" step. After every weekly
+#           upstream merge, if any of the 13 paths got re-introduced from
+#           upstream, the step git-rm's them and commits before opening the
+#           PR. This is the durability story the user asked for.
+#
+#      The conflicts case (modify/delete: we deleted, upstream modified) is
+#      intentionally NOT auto-resolved — the human reviewing the sync PR
+#      handles it. Weekly cadence + 13 paths means this is a low-friction
+#      manual step, not a constant battle.
+#
+# Files deleted (NOT included verbatim in this patch — pure noise to diff;
+# rely on git history for the actual content):
+#
+#      .github/workflows/translations-pull.yml         (Crowdin every-2h cron)
+#      .github/workflows/translations-upload.yml       (Crowdin on push to main)
+#      .github/workflows/translations-force-pull.yml   (Crowdin manual trigger)
+#      .github/workflows/publish.yml                   (DockerHub publish on tags)
+#      .github/workflows/deploy.yml                    (push-to-release-branch)
+#      .github/workflows/pr-review-reminder.yml        (Documenso reviewer pings)
+#      .github/workflows/issue-assignee-check.yml      (Documenso triage)
+#      .github/workflows/issue-labeler.yml             (Documenso triage)
+#      .github/workflows/issue-opened.yml              (Documenso triage)
+#      .github/workflows/first-interaction.yml         (Documenso community)
+#      .github/workflows/pr-labeler.yml                (Documenso labeler)
+#      .github/workflows/stale.yml                     (cron every 8h, marks stale)
+#      .github/labeler.yml                             (orphaned config for pr-labeler)
+#
+# Workflows kept and why:
+#
+#      ci.yml                 — runs npm run build (catches typecheck errors
+#                               before they reach Coolify; would have caught
+#                               overlay 005 v1's tsc failure)
+#      codeql-analysis.yml    — GitHub Advanced Security CodeQL scans
+#      e2e-tests.yml          — Playwright suite (useful before merging
+#                               upstream-sync PRs)
+#      semantic-pull-requests — enforces conventional commits in PR titles;
+#                               aligns with BizRethink master commit policy
+#      upstream-sync.yml      — ours; this overlay extends it
+#
+# Why-not-additive: deleting upstream files cannot be done via a new file in
+#      packages/bizrethink/. The upstream-sync.yml extension IS the additive
+#      durability layer — that file is BizRethink-owned (we wrote it from
+#      scratch on day 1, it's not a Documenso file we patched).
+#
+# Upstream-merge-fragility: MEDIUM. The deletion list is hardcoded in the
+#      sync workflow. If Documenso adds a NEW workflow that also fails on our
+#      fork, the list needs updating manually. Cadence is low (Documenso
+#      doesn't add new CI workflows often). The git-merge of `upstream-sync.yml`
+#      itself is at LOW fragility — we only added a new step; upstream doesn't
+#      touch our copy of this file.
+#
+# Status: APPLIED 2026-04-30 (after the user confirmed durability over per-file
+#         GitHub-UI disable; same conversation as the overlay 005 fix-up).
+
+diff --git a/.github/workflows/upstream-sync.yml b/.github/workflows/upstream-sync.yml
+--- a/.github/workflows/upstream-sync.yml
++++ b/.github/workflows/upstream-sync.yml
+@@ -49,6 +49,42 @@ jobs:
+       - name: Attempt merge
+         id: merge
+         continue-on-error: true
+         run: |
+           if git merge upstream/main --no-edit; then
+             echo "result=clean" >> $GITHUB_OUTPUT
+           else
+             echo "result=conflicts" >> $GITHUB_OUTPUT
+             git status > /tmp/conflict-status.txt
+           fi
+
++      # Per overlay 006: workflow files that exist in documenso/main but are
++      # irrelevant to BizRethink's self-host fork (Crowdin translations,
++      # DockerHub publish, Documenso community labelers, etc.). If a clean
++      # merge re-introduces any of them, delete and commit. The conflicts case
++      # is handled by the human reviewing the sync PR.
++      - name: Re-prune upstream-only workflow files
++        if: steps.merge.outputs.result == 'clean'
++        run: |
++          PRUNE_PATHS=(
++            ".github/workflows/translations-pull.yml"
++            ".github/workflows/translations-upload.yml"
++            ".github/workflows/translations-force-pull.yml"
++            ".github/workflows/publish.yml"
++            ".github/workflows/deploy.yml"
++            ".github/workflows/pr-review-reminder.yml"
++            ".github/workflows/issue-assignee-check.yml"
++            ".github/workflows/issue-labeler.yml"
++            ".github/workflows/issue-opened.yml"
++            ".github/workflows/first-interaction.yml"
++            ".github/workflows/pr-labeler.yml"
++            ".github/workflows/stale.yml"
++            ".github/labeler.yml"
++          )
++          REMOVED=0
++          for p in "${PRUNE_PATHS[@]}"; do
++            if [ -f "$p" ]; then
++              git rm "$p"
++              REMOVED=$((REMOVED + 1))
++            fi
++          done
++          if [ "$REMOVED" -gt 0 ]; then
++            git commit -m "chore(sync): re-prune $REMOVED upstream-only workflow file(s) per overlay 006"
++            echo "Re-pruned $REMOVED file(s) after upstream merge."
++          else
++            echo "No upstream-only files to re-prune."
++          fi
++
+       - name: List overlay patches that may need re-application

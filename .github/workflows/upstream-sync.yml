@@ -12,7 +12,7 @@ name: Upstream sync
 on:
   schedule:
     # Mondays 04:00 UTC = ~Sunday evening US East coast — review during business hours Mon
-    - cron: "0 4 * * 1"
+    - cron: '0 4 * * 1'
   workflow_dispatch: {}
 
 permissions:
@@ -55,6 +55,43 @@ jobs:
           else
             echo "result=conflicts" >> $GITHUB_OUTPUT
             git status > /tmp/conflict-status.txt
+          fi
+
+      # Per overlay 006: workflow files that exist in documenso/main but are
+      # irrelevant to BizRethink's self-host fork (Crowdin translations,
+      # DockerHub publish, Documenso community labelers, etc.). If a clean
+      # merge re-introduces any of them, delete and commit. The conflicts case
+      # is handled by the human reviewing the sync PR.
+      - name: Re-prune upstream-only workflow files
+        if: steps.merge.outputs.result == 'clean'
+        run: |
+          PRUNE_PATHS=(
+            ".github/workflows/translations-pull.yml"
+            ".github/workflows/translations-upload.yml"
+            ".github/workflows/translations-force-pull.yml"
+            ".github/workflows/publish.yml"
+            ".github/workflows/deploy.yml"
+            ".github/workflows/pr-review-reminder.yml"
+            ".github/workflows/issue-assignee-check.yml"
+            ".github/workflows/issue-labeler.yml"
+            ".github/workflows/issue-opened.yml"
+            ".github/workflows/first-interaction.yml"
+            ".github/workflows/pr-labeler.yml"
+            ".github/workflows/stale.yml"
+            ".github/labeler.yml"
+          )
+          REMOVED=0
+          for p in "${PRUNE_PATHS[@]}"; do
+            if [ -f "$p" ]; then
+              git rm "$p"
+              REMOVED=$((REMOVED + 1))
+            fi
+          done
+          if [ "$REMOVED" -gt 0 ]; then
+            git commit -m "chore(sync): re-prune $REMOVED upstream-only workflow file(s) per overlay 006"
+            echo "Re-pruned $REMOVED file(s) after upstream merge."
+          else
+            echo "No upstream-only files to re-prune."
           fi
 
       - name: List overlay patches that may need re-application
