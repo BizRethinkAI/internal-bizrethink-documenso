@@ -147,7 +147,12 @@ export const mailer = new Proxy(envDefaultMailer, {
           htmlLen: opts.html?.toString().length ?? 0,
           textLen: opts.text?.toString().length ?? 0,
           subjectHead: opts.subject?.slice(0, 40),
-          fromAddr: typeof opts.from === 'string' ? opts.from : opts.from?.address,
+          fromAddr:
+            typeof opts.from === 'string'
+              ? opts.from
+              : Array.isArray(opts.from)
+                ? '<array>'
+                : opts.from?.address,
           pid: process.pid,
         });
 
