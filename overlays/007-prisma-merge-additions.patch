@@ -29,8 +29,21 @@
 # Why-not-additive: package.json scripts CAN'T be extended additively from a
 #      separate package — npm runs the literal command in the upstream
 #      package.json. We have to overlay-patch this file. The patch surface is
-#      tiny (one new key + 6 modified script values), so merge friction is
-#      minimal.
+#      tiny (one new key + 6 modified script values + one new dep), so merge
+#      friction is minimal.
+#
+# Critical detail — the @bizrethink/customizations dependency: turbo's
+#      `prune --scope=@documenso/remix --docker` only includes packages in
+#      the dependency graph of the scoped target. Without
+#      `@bizrethink/customizations` listed as a dep of `@documenso/prisma`,
+#      the pruned docker context would EXCLUDE our bizrethink package — the
+#      merge script would not exist in the build container, and the prisma
+#      prebuild would fail. Adding the dep tells turbo to include it. This
+#      is why the patch also adds `"@bizrethink/customizations": "*"` to
+#      `dependencies` — not just for runtime imports (we don't import it at
+#      runtime from the prisma package), but for the build-time prune
+#      visibility. Verified locally: `turbo prune` now lists
+#      `@bizrethink/customizations` as the first added package.
 #
 # Upstream-merge-fragility: LOW. Documenso doesn't change packages/prisma/
 #      package.json scripts often (last commit to the file: confirm via
@@ -72,3 +85,11 @@ diff --git a/packages/prisma/package.json b/packages/prisma/package.json
      "prisma:migrate-reset": "prisma migrate reset",
      "prisma:seed": "prisma db seed",
      "prisma:studio": "prisma studio"
+@@ -20,6 +21,7 @@
+     "seed": "tsx ./seed-database.ts"
+   },
+   "dependencies": {
++    "@bizrethink/customizations": "*",
+     "@prisma/client": "^6.19.0",
+     "kysely": "0.28.16",
+     "nanoid": "^5.1.6",

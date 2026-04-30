@@ -22,6 +22,7 @@
     "seed": "tsx ./seed-database.ts"
   },
   "dependencies": {
+    "@bizrethink/customizations": "*",
     "@prisma/client": "^6.19.0",
     "kysely": "0.28.16",
     "nanoid": "^5.1.6",
