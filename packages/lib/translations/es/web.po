@@ -4922,6 +4922,10 @@ msgstr "Sobre distribuido"
 
 #: apps/remix/app/routes/_internal+/[__htmltopdf]+/audit-log.tsx
 #: packages/lib/server-only/pdf/render-audit-logs.ts
+#: packages/lib/server-only/pdf/render-audit-logs.ts
+#: packages/lib/server-only/pdf/render-audit-logs.ts
+#: packages/lib/server-only/pdf/render-certificate.ts
+#: packages/lib/server-only/pdf/render-certificate.ts
 msgid "Envelope ID"
 msgstr "ID de Sobre"
 
@@ -5950,10 +5954,6 @@ msgstr "Se proporcionó un token de pre-firma de inserción no válido"
 msgid "Invalid License Key"
 msgstr "Clave de licencia no válida"
 
-#: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "Invalid License Type - Your Documenso instance is using features that are not part of your license."
-msgstr "Tipo de licencia no válido: tu instancia de Documenso está usando funciones que no forman parte de tu licencia."
-
 #: apps/remix/app/routes/_unauthenticated+/team.verify.email.$token.tsx
 msgid "Invalid link"
 msgstr "Enlace inválido"
@@ -6236,17 +6236,9 @@ msgstr "Espaciado de letras"
 msgid "License"
 msgstr "Licencia"
 
-#: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "License Expired - Please renew your license to continue using enterprise features."
-msgstr "Licencia vencida: renueva tu licencia para seguir usando las funciones enterprise."
-
 #: apps/remix/app/components/general/admin-license-card.tsx
 msgid "License Key"
 msgstr "Clave de licencia"
-
-#: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "License Payment Overdue - Please update your payment to avoid service disruptions."
-msgstr "Pago de la licencia vencido: actualiza tu método de pago para evitar interrupciones del servicio."
 
 #: apps/remix/app/components/general/admin-license-card.tsx
 msgid "License synced"
@@ -6633,10 +6625,6 @@ msgstr "Centro"
 #: packages/ui/primitives/document-flow/field-items-advanced-settings/number-field.tsx
 msgid "Min"
 msgstr "Mín"
-
-#: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "Missing License - Your Documenso instance is using features that require a license."
-msgstr "Licencia faltante: tu instancia de Documenso está usando funciones que requieren una licencia."
 
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page.tsx
 msgid "Missing Recipients"
@@ -8781,10 +8769,6 @@ msgstr "Seguridad"
 #: apps/remix/app/routes/_authenticated+/settings+/security.activity.tsx
 msgid "Security activity"
 msgstr "Actividad de seguridad"
-
-#: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "See Documentation"
-msgstr "Ver documentación"
 
 #: apps/remix/app/routes/_authenticated+/admin+/documents.$id.tsx
 msgid "See the background jobs tab for the status"
@@ -13636,4 +13620,3 @@ msgstr "Su código de verificación:"
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.sso.tsx
 msgid "your-domain.com another-domain.com"
 msgstr "su-dominio.com otro-dominio.com"
-

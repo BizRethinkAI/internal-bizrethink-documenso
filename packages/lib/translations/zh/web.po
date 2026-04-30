@@ -4922,6 +4922,10 @@ msgstr "信封已分发"
 
 #: apps/remix/app/routes/_internal+/[__htmltopdf]+/audit-log.tsx
 #: packages/lib/server-only/pdf/render-audit-logs.ts
+#: packages/lib/server-only/pdf/render-audit-logs.ts
+#: packages/lib/server-only/pdf/render-audit-logs.ts
+#: packages/lib/server-only/pdf/render-certificate.ts
+#: packages/lib/server-only/pdf/render-certificate.ts
 msgid "Envelope ID"
 msgstr "信封 ID"
 
@@ -5950,10 +5954,6 @@ msgstr "提供的嵌入预签名令牌无效"
 msgid "Invalid License Key"
 msgstr "许可证密钥无效"
 
-#: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "Invalid License Type - Your Documenso instance is using features that are not part of your license."
-msgstr "许可证类型无效 - 您的 Documenso 实例正在使用不在当前许可证范围内的功能。"
-
 #: apps/remix/app/routes/_unauthenticated+/team.verify.email.$token.tsx
 msgid "Invalid link"
 msgstr "链接无效"
@@ -6236,17 +6236,9 @@ msgstr "字间距"
 msgid "License"
 msgstr "许可证"
 
-#: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "License Expired - Please renew your license to continue using enterprise features."
-msgstr "许可证已过期 - 请续订您的许可证以继续使用企业功能。"
-
 #: apps/remix/app/components/general/admin-license-card.tsx
 msgid "License Key"
 msgstr "许可证密钥"
-
-#: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "License Payment Overdue - Please update your payment to avoid service disruptions."
-msgstr "许可证付款逾期 - 请更新您的付款信息以避免服务中断。"
 
 #: apps/remix/app/components/general/admin-license-card.tsx
 msgid "License synced"
@@ -6633,10 +6625,6 @@ msgstr "垂直居中"
 #: packages/ui/primitives/document-flow/field-items-advanced-settings/number-field.tsx
 msgid "Min"
 msgstr "最小值"
-
-#: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "Missing License - Your Documenso instance is using features that require a license."
-msgstr "缺少许可证 - 您的 Documenso 实例正在使用需要许可证的功能。"
 
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page.tsx
 msgid "Missing Recipients"
@@ -8781,10 +8769,6 @@ msgstr "安全"
 #: apps/remix/app/routes/_authenticated+/settings+/security.activity.tsx
 msgid "Security activity"
 msgstr "安全活动"
-
-#: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "See Documentation"
-msgstr "查看文档"
 
 #: apps/remix/app/routes/_authenticated+/admin+/documents.$id.tsx
 msgid "See the background jobs tab for the status"
@@ -13636,4 +13620,3 @@ msgstr "您的验证码："
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.sso.tsx
 msgid "your-domain.com another-domain.com"
 msgstr "your-domain.com another-domain.com"
-

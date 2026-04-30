@@ -4917,6 +4917,10 @@ msgstr "Envelope distribuído"
 
 #: apps/remix/app/routes/_internal+/[__htmltopdf]+/audit-log.tsx
 #: packages/lib/server-only/pdf/render-audit-logs.ts
+#: packages/lib/server-only/pdf/render-audit-logs.ts
+#: packages/lib/server-only/pdf/render-audit-logs.ts
+#: packages/lib/server-only/pdf/render-certificate.ts
+#: packages/lib/server-only/pdf/render-certificate.ts
 msgid "Envelope ID"
 msgstr "ID do Envelope"
 
@@ -5945,10 +5949,6 @@ msgstr ""
 msgid "Invalid License Key"
 msgstr ""
 
-#: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "Invalid License Type - Your Documenso instance is using features that are not part of your license."
-msgstr ""
-
 #: apps/remix/app/routes/_unauthenticated+/team.verify.email.$token.tsx
 msgid "Invalid link"
 msgstr "Link inválido"
@@ -6231,16 +6231,8 @@ msgstr "Espaçamento entre Letras"
 msgid "License"
 msgstr ""
 
-#: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "License Expired - Please renew your license to continue using enterprise features."
-msgstr ""
-
 #: apps/remix/app/components/general/admin-license-card.tsx
 msgid "License Key"
-msgstr ""
-
-#: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "License Payment Overdue - Please update your payment to avoid service disruptions."
 msgstr ""
 
 #: apps/remix/app/components/general/admin-license-card.tsx
@@ -6628,10 +6620,6 @@ msgstr "Meio"
 #: packages/ui/primitives/document-flow/field-items-advanced-settings/number-field.tsx
 msgid "Min"
 msgstr "Mín"
-
-#: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "Missing License - Your Documenso instance is using features that require a license."
-msgstr ""
 
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page.tsx
 msgid "Missing Recipients"
@@ -8776,10 +8764,6 @@ msgstr "Segurança"
 #: apps/remix/app/routes/_authenticated+/settings+/security.activity.tsx
 msgid "Security activity"
 msgstr "Atividade de segurança"
-
-#: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "See Documentation"
-msgstr ""
 
 #: apps/remix/app/routes/_authenticated+/admin+/documents.$id.tsx
 msgid "See the background jobs tab for the status"

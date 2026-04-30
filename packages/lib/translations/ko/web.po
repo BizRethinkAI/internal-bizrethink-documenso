@@ -4922,6 +4922,10 @@ msgstr "봉투가 배포되었습니다"
 
 #: apps/remix/app/routes/_internal+/[__htmltopdf]+/audit-log.tsx
 #: packages/lib/server-only/pdf/render-audit-logs.ts
+#: packages/lib/server-only/pdf/render-audit-logs.ts
+#: packages/lib/server-only/pdf/render-audit-logs.ts
+#: packages/lib/server-only/pdf/render-certificate.ts
+#: packages/lib/server-only/pdf/render-certificate.ts
 msgid "Envelope ID"
 msgstr "봉투 ID"
 
@@ -5950,10 +5954,6 @@ msgstr "잘못된 임베딩 사전 서명 토큰이 제공되었습니다."
 msgid "Invalid License Key"
 msgstr "잘못된 라이선스 키"
 
-#: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "Invalid License Type - Your Documenso instance is using features that are not part of your license."
-msgstr "잘못된 라이선스 유형 - 현재 Documenso 인스턴스에서 사용 중인 기능은 보유한 라이선스에 포함되지 않습니다."
-
 #: apps/remix/app/routes/_unauthenticated+/team.verify.email.$token.tsx
 msgid "Invalid link"
 msgstr "유효하지 않은 링크입니다"
@@ -6236,17 +6236,9 @@ msgstr "자간"
 msgid "License"
 msgstr "라이선스"
 
-#: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "License Expired - Please renew your license to continue using enterprise features."
-msgstr "라이선스 만료 - 엔터프라이즈 기능을 계속 사용하려면 라이선스를 갱신해 주세요."
-
 #: apps/remix/app/components/general/admin-license-card.tsx
 msgid "License Key"
 msgstr "라이선스 키"
-
-#: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "License Payment Overdue - Please update your payment to avoid service disruptions."
-msgstr "라이선스 결제 연체 - 서비스 중단을 방지하려면 결제 정보를 업데이트해 주세요."
 
 #: apps/remix/app/components/general/admin-license-card.tsx
 msgid "License synced"
@@ -6633,10 +6625,6 @@ msgstr "가운데"
 #: packages/ui/primitives/document-flow/field-items-advanced-settings/number-field.tsx
 msgid "Min"
 msgstr "최소"
-
-#: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "Missing License - Your Documenso instance is using features that require a license."
-msgstr "라이선스 누락 - 현재 Documenso 인스턴스에서 사용하는 기능에는 라이선스가 필요합니다."
 
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page.tsx
 msgid "Missing Recipients"
@@ -8781,10 +8769,6 @@ msgstr "보안"
 #: apps/remix/app/routes/_authenticated+/settings+/security.activity.tsx
 msgid "Security activity"
 msgstr "보안 활동"
-
-#: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "See Documentation"
-msgstr "문서 보기"
 
 #: apps/remix/app/routes/_authenticated+/admin+/documents.$id.tsx
 msgid "See the background jobs tab for the status"
@@ -13636,4 +13620,3 @@ msgstr "인증 코드:"
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.sso.tsx
 msgid "your-domain.com another-domain.com"
 msgstr "your-domain.com another-domain.com"
-

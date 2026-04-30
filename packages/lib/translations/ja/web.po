@@ -4922,6 +4922,10 @@ msgstr "封筒を送信しました"
 
 #: apps/remix/app/routes/_internal+/[__htmltopdf]+/audit-log.tsx
 #: packages/lib/server-only/pdf/render-audit-logs.ts
+#: packages/lib/server-only/pdf/render-audit-logs.ts
+#: packages/lib/server-only/pdf/render-audit-logs.ts
+#: packages/lib/server-only/pdf/render-certificate.ts
+#: packages/lib/server-only/pdf/render-certificate.ts
 msgid "Envelope ID"
 msgstr "封筒ID"
 
@@ -5950,10 +5954,6 @@ msgstr "無効な埋め込み事前署名トークンが指定されました"
 msgid "Invalid License Key"
 msgstr "無効なライセンスキー"
 
-#: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "Invalid License Type - Your Documenso instance is using features that are not part of your license."
-msgstr "無効なライスタイプです。ご利用中の Documenso インスタンスでは、ライセンスに含まれていない機能が使用されています。"
-
 #: apps/remix/app/routes/_unauthenticated+/team.verify.email.$token.tsx
 msgid "Invalid link"
 msgstr "リンクが無効です"
@@ -6236,17 +6236,9 @@ msgstr "文字間隔"
 msgid "License"
 msgstr "ライセンス"
 
-#: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "License Expired - Please renew your license to continue using enterprise features."
-msgstr "ライセンスの有効期限が切れています。エンタープライズ機能を引き続きご利用いただくには、ライセンスを更新してください。"
-
 #: apps/remix/app/components/general/admin-license-card.tsx
 msgid "License Key"
 msgstr "ライセンスキー"
-
-#: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "License Payment Overdue - Please update your payment to avoid service disruptions."
-msgstr "ライセンスの支払いが延滞しています。サービスの中断を防ぐために、お支払い情報を更新してください。"
 
 #: apps/remix/app/components/general/admin-license-card.tsx
 msgid "License synced"
@@ -6633,10 +6625,6 @@ msgstr "中央"
 #: packages/ui/primitives/document-flow/field-items-advanced-settings/number-field.tsx
 msgid "Min"
 msgstr "最小"
-
-#: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "Missing License - Your Documenso instance is using features that require a license."
-msgstr "ライセンスがありません。ご利用中の Documenso インスタンスでは、ライセンスが必要な機能が使用されています。"
 
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page.tsx
 msgid "Missing Recipients"
@@ -8781,10 +8769,6 @@ msgstr "セキュリティ"
 #: apps/remix/app/routes/_authenticated+/settings+/security.activity.tsx
 msgid "Security activity"
 msgstr "セキュリティアクティビティ"
-
-#: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "See Documentation"
-msgstr "ドキュメントを見る"
 
 #: apps/remix/app/routes/_authenticated+/admin+/documents.$id.tsx
 msgid "See the background jobs tab for the status"
@@ -13636,4 +13620,3 @@ msgstr "認証コード:"
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.sso.tsx
 msgid "your-domain.com another-domain.com"
 msgstr "your-domain.com another-domain.com"
-
