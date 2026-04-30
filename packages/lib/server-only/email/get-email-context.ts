@@ -86,11 +86,28 @@ export const getEmailContext = async (
   const { source, meta } = options;
 
   let emailContext: Omit<EmailContextResponse, 'senderEmail' | 'replyToEmail' | 'emailLanguage'>;
+  let resolvedOrgId: string | undefined;
 
   if (source.type === 'organisation') {
+    resolvedOrgId = source.organisationId;
     emailContext = await handleOrganisationEmailContext(source.organisationId);
   } else {
-    emailContext = await handleTeamEmailContext(source.teamId);
+    const teamResult = await handleTeamEmailContext(source.teamId);
+    resolvedOrgId = teamResult.organisationId;
+    emailContext = teamResult;
+  }
+
+  // MODIFIED for BizRethink (overlay 010): set the AsyncLocalStorage org
+  // context for the current async chain. The mailer Proxy in
+  // packages/email/mailer.ts reads this at sendMail time to dispatch the
+  // org-specific transporter (or fall through to env-default if unset).
+  // `enterWith` propagates through subsequent awaits without requiring an
+  // explicit `run` scope around the caller.
+  if (resolvedOrgId) {
+    const { orgContextStorage } = await import(
+      '@bizrethink/customizations/server-only/org-context'
+    );
+    orgContextStorage.enterWith({ orgId: resolvedOrgId });
   }
 
   const emailLanguage = meta?.language || emailContext.settings.documentLanguage;
@@ -223,6 +240,11 @@ const handleTeamEmailContext = async (teamId: number) => {
     settings: teamSettings,
     claims,
     organisationType: organisation.type,
+    // MODIFIED for BizRethink (overlay 010): expose the parent org id so
+    // getEmailContext can set the AsyncLocalStorage context for per-org
+    // SMTP routing. Excluded from the EmailContextResponse public shape via
+    // destructuring at the call site.
+    organisationId: organisation.id,
   };
 };
 

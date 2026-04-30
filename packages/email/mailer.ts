@@ -108,4 +108,42 @@ const getTransport = (): Transporter => {
   });
 };
 
-export const mailer = getTransport();
+// MODIFIED for BizRethink (overlay 010): per-org SMTP via AsyncLocalStorage.
+//
+// The original `export const mailer = getTransport()` is replaced with a
+// Proxy that intercepts `.sendMail` calls. At send time the Proxy reads
+// `orgContextStorage` (set by getEmailContext for any org-scoped flow) and
+// dispatches to the right transporter — per-org via getMailerForOrg, or
+// env-default otherwise.
+//
+// Dynamic imports break what would otherwise be a circular dependency
+// between @documenso/email and @bizrethink/customizations (per-org-mailer
+// imports `mailer` from this file). Both bizrethink modules are loaded by
+// the time the first sendMail call happens so the dynamic imports always
+// hit the require cache.
+
+const envDefaultMailer = getTransport();
+
+export const mailer = new Proxy(envDefaultMailer, {
+  get(target, prop, receiver) {
+    if (prop === 'sendMail') {
+      return async (opts: Parameters<typeof envDefaultMailer.sendMail>[0]) => {
+        const { orgContextStorage } = await import(
+          '@bizrethink/customizations/server-only/org-context'
+        );
+        const ctx = orgContextStorage.getStore();
+
+        if (ctx?.orgId) {
+          const { getMailerForOrg } = await import(
+            '@bizrethink/customizations/server-only/per-org-mailer'
+          );
+          const transporter = await getMailerForOrg(ctx.orgId);
+          return transporter.sendMail(opts);
+        }
+
+        return target.sendMail(opts);
+      };
+    }
+    return Reflect.get(target, prop, receiver);
+  },
+}) as Transporter;
