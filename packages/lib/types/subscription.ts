@@ -116,6 +116,7 @@ export enum INTERNAL_CLAIM_ID {
   EARLY_ADOPTER = 'earlyAdopter',
   PLATFORM = 'platform',
   ENTERPRISE = 'enterprise',
+  BIZRETHINK = 'bizrethink',
 }
 
 export type InternalClaim = Omit<SubscriptionClaim, 'createdAt' | 'updatedAt'>;
@@ -213,6 +214,30 @@ export const internalClaims: InternalClaims = {
       hidePoweredBy: true,
       embedSigning: true,
       embedSigningWhiteLabel: true,
+      signingReminders: true,
+    },
+  },
+  // MODIFIED for BizRethink: internal tier used by every org-creation path in
+  // our self-host build. Mirrors ENTERPRISE flags. HIPAA + allowLegacyEnvelopes
+  // intentionally omitted (out of scope per CLAUDE.md). See overlays/001.
+  [INTERNAL_CLAIM_ID.BIZRETHINK]: {
+    id: INTERNAL_CLAIM_ID.BIZRETHINK,
+    name: 'BizRethink',
+    teamCount: 0,
+    memberCount: 0,
+    envelopeItemCount: 10,
+    locked: true,
+    flags: {
+      unlimitedDocuments: true,
+      allowCustomBranding: true,
+      hidePoweredBy: true,
+      emailDomains: true,
+      embedAuthoring: true,
+      embedAuthoringWhiteLabel: true,
+      embedSigning: true,
+      embedSigningWhiteLabel: true,
+      cfr21: true,
+      authenticationPortal: true,
       signingReminders: true,
     },
   },

@@ -1,0 +1,72 @@
+# Why: Self-hosted Documenso ships 6 SubscriptionClaim tiers (FREE, INDIVIDUAL,
+#      TEAM, EARLY_ADOPTER, PLATFORM, ENTERPRISE). For BizRethink internal use we
+#      want a 7th tier — `BIZRETHINK` — that turns on every feature flag we care
+#      about (unlimitedDocuments, custom branding, hidePoweredBy, emailDomains,
+#      embed authoring/signing + whitelabel, cfr21, authenticationPortal,
+#      signingReminders). Mirrors ENTERPRISE flags; HIPAA + allowLegacyEnvelopes
+#      intentionally omitted (CLAUDE.md scope decision).
+#
+#      This is the type-system half of the unlock. Pairs with overlay 002 which
+#      repoints all org-creation call sites to use BIZRETHINK instead of FREE.
+#
+# Why-not-additive: `internalClaims` is a `Record<INTERNAL_CLAIM_ID, …>` keyed by
+#      the enum, so adding a tier requires extending the enum AND the record in
+#      the same file. There's no extension point. Modifying upstream is the only
+#      mechanical option.
+#
+# Upstream-merge-fragility: MEDIUM. If upstream adds a new tier, our +30 lines
+#      live near theirs and may need re-anchoring. If upstream adds a new flag
+#      to ZClaimFlagsSchema we'll likely want to set it on BIZRETHINK too —
+#      catch this during weekly upstream-sync review.
+#
+# Status: APPLIED 2026-04-29 (day 1 spike, replaces obsolete
+#         001-default-claim-enterprise.patch which targeted a stale file shape).
+#
+# Production deploy step: After applying this patch, also INSERT a matching
+#         SubscriptionClaim row into the DB so admin UIs list the tier. SQL is
+#         documented in packages/bizrethink/README.md. Org-creation works without
+#         the row (originalSubscriptionClaimId is String? with no FK relation).
+
+diff --git a/packages/lib/types/subscription.ts b/packages/lib/types/subscription.ts
+index d12b906e9..0559fc719 100644
+--- a/packages/lib/types/subscription.ts
++++ b/packages/lib/types/subscription.ts
+@@ -116,6 +116,7 @@ export enum INTERNAL_CLAIM_ID {
+   EARLY_ADOPTER = 'earlyAdopter',
+   PLATFORM = 'platform',
+   ENTERPRISE = 'enterprise',
++  BIZRETHINK = 'bizrethink',
+ }
+
+ export type InternalClaim = Omit<SubscriptionClaim, 'createdAt' | 'updatedAt'>;
+@@ -216,6 +217,30 @@ export const internalClaims: InternalClaims = {
+       signingReminders: true,
+     },
+   },
++  // MODIFIED for BizRethink: internal tier used by every org-creation path in
++  // our self-host build. Mirrors ENTERPRISE flags. HIPAA + allowLegacyEnvelopes
++  // intentionally omitted (out of scope per CLAUDE.md). See overlays/001.
++  [INTERNAL_CLAIM_ID.BIZRETHINK]: {
++    id: INTERNAL_CLAIM_ID.BIZRETHINK,
++    name: 'BizRethink',
++    teamCount: 0,
++    memberCount: 0,
++    envelopeItemCount: 10,
++    locked: true,
++    flags: {
++      unlimitedDocuments: true,
++      allowCustomBranding: true,
++      hidePoweredBy: true,
++      emailDomains: true,
++      embedAuthoring: true,
++      embedAuthoringWhiteLabel: true,
++      embedSigning: true,
++      embedSigningWhiteLabel: true,
++      cfr21: true,
++      authenticationPortal: true,
++      signingReminders: true,
++    },
++  },
+ } as const;
+
+ export const ZStripeOrganisationCreateMetadataSchema = z.object({
