@@ -1,0 +1,56 @@
+# Why: Documenso's `<AdminLicenseStatusBanner>` renders a destructive red banner
+#      when the licence-server's derived status is UNAUTHORIZED, EXPIRED, or
+#      PAST_DUE. For BizRethink's self-host the licence server returns
+#      UNAUTHORIZED because overlay 001 added the BIZRETHINK tier, whose flags
+#      include EE-gated features (cfr21, embedAuthoringWhiteLabel,
+#      authenticationPortal, etc.). The banner is purely cosmetic — none of the
+#      actual EE feature checks block functionality on self-host (per the
+#      paywall audit memory note: self-host needs no licence). The banner just
+#      pollutes the admin panel with a red error that future operators may
+#      mistake for a real outage.
+#
+#      Smallest possible patch: add UNAUTHORIZED to the early-return guard so
+#      the banner never renders for our case. PAST_DUE / EXPIRED still render
+#      if those statuses ever come back — preserves upstream behaviour for any
+#      future state we don't control. We intentionally do NOT collapse to
+#      `return null` always, because that would silently hide future banner
+#      classes that upstream might add.
+#
+# Why-not-additive: The banner is rendered unconditionally in apps/remix/app/
+#      root.tsx (called as `<AdminLicenseStatusBanner license={...} />`). The
+#      only way to suppress it for the UNAUTHORIZED case is to edit the
+#      component's early-return guard. There is no prop, no env var, no feature
+#      flag exposed by upstream for this.
+#
+# Upstream-merge-fragility: LOW. Single token added to an `||` chain inside
+#      one early-return condition. Conflicts only if upstream restructures the
+#      derivedStatus enum or refactors the guard — both would need a manual
+#      look at the new shape and are flagged loudly by `git apply --3way`.
+#
+# Audit note: pairs with the `[License] Derived Status: UNAUTHORIZED` log line
+#      that appeared in container startup logs as soon as overlay 001 was
+#      deployed (2026-04-30 11:39 UTC). The licence server flags BIZRETHINK's
+#      EE flag set; this patch silences the visual indicator only. The log
+#      line itself is harmless and intentionally left in place — it's useful
+#      breadcrumb during upstream-sync triage if Documenso ever adds new
+#      licence states.
+#
+# Status: APPLIED 2026-04-30 (after smoke test, before BizRethink layer build).
+
+diff --git a/apps/remix/app/components/general/admin-license-status-banner.tsx b/apps/remix/app/components/general/admin-license-status-banner.tsx
+index 0000000..0000000 100644
+--- a/apps/remix/app/components/general/admin-license-status-banner.tsx
++++ b/apps/remix/app/components/general/admin-license-status-banner.tsx
+@@ -14,7 +14,11 @@ export type AdminLicenseStatusBannerProps = {
+ export const AdminLicenseStatusBanner = ({ license }: AdminLicenseStatusBannerProps) => {
+   const licenseStatus = license?.derivedStatus;
+
+-  if (!license || licenseStatus === 'ACTIVE' || licenseStatus === 'NOT_FOUND') {
++  // MODIFIED for BizRethink: UNAUTHORIZED is added to the early-return list
++  // because our self-host BIZRETHINK tier (overlay 001) trips the licence
++  // server's flag-usage check. The banner is cosmetic; no functional EE gate
++  // exists on self-host. See overlays/005.
++  if (!license || licenseStatus === 'ACTIVE' || licenseStatus === 'NOT_FOUND' || licenseStatus === 'UNAUTHORIZED') {
+     return null;
+   }
+

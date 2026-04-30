@@ -14,7 +14,16 @@ export type AdminLicenseStatusBannerProps = {
 export const AdminLicenseStatusBanner = ({ license }: AdminLicenseStatusBannerProps) => {
   const licenseStatus = license?.derivedStatus;
 
-  if (!license || licenseStatus === 'ACTIVE' || licenseStatus === 'NOT_FOUND') {
+  // MODIFIED for BizRethink: UNAUTHORIZED is added to the early-return list
+  // because our self-host BIZRETHINK tier (overlay 001) trips the licence
+  // server's flag-usage check. The banner is cosmetic; no functional EE gate
+  // exists on self-host. See overlays/005.
+  if (
+    !license ||
+    licenseStatus === 'ACTIVE' ||
+    licenseStatus === 'NOT_FOUND' ||
+    licenseStatus === 'UNAUTHORIZED'
+  ) {
     return null;
   }
 
