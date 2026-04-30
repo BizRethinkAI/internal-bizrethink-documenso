@@ -34,16 +34,28 @@
 #
 # Critical detail — the @bizrethink/customizations dependency: turbo's
 #      `prune --scope=@documenso/remix --docker` only includes packages in
-#      the dependency graph of the scoped target. Without
-#      `@bizrethink/customizations` listed as a dep of `@documenso/prisma`,
-#      the pruned docker context would EXCLUDE our bizrethink package — the
-#      merge script would not exist in the build container, and the prisma
-#      prebuild would fail. Adding the dep tells turbo to include it. This
-#      is why the patch also adds `"@bizrethink/customizations": "*"` to
-#      `dependencies` — not just for runtime imports (we don't import it at
-#      runtime from the prisma package), but for the build-time prune
-#      visibility. Verified locally: `turbo prune` now lists
-#      `@bizrethink/customizations` as the first added package.
+#      the dependency graph of the scoped target. We need bizrethink in the
+#      pruned context so the merge script exists in the build container.
+#
+#      ORIGINAL APPROACH (commit a6c7c3abd): added
+#      `"@bizrethink/customizations": "*"` to `@documenso/prisma`'s
+#      `dependencies`. Worked for prune visibility BUT introduced a
+#      CYCLIC DEPENDENCY when bizrethink later (Phase B kickoff) needed to
+#      depend on `@documenso/prisma` to import the Prisma client:
+#         prisma → bizrethink → prisma  (cycle)
+#         lib → prisma → bizrethink → lib  (cycle, since bizrethink also
+#                                            deps on lib for AppError, env,
+#                                            crypto helpers)
+#
+#      CURRENT APPROACH (Phase B fix-up): moved the bizrethink dep from
+#      `@documenso/prisma` to `@documenso/remix`. Remix is the build target
+#      (the scope for turbo prune), so declaring bizrethink as a remix dep
+#      brings it into the prune output without creating a cycle. Bizrethink
+#      can freely depend on prisma/lib/email for runtime imports.
+#
+#      Verified locally: `turbo prune --scope=@documenso/remix --docker`
+#      lists `@bizrethink/customizations` as the first added package and
+#      no cyclic-dependency error. The diff below shows the current state.
 #
 # Upstream-merge-fragility: LOW. Documenso doesn't change packages/prisma/
 #      package.json scripts often (last commit to the file: confirm via
@@ -85,11 +97,13 @@ diff --git a/packages/prisma/package.json b/packages/prisma/package.json
      "prisma:migrate-reset": "prisma migrate reset",
      "prisma:seed": "prisma db seed",
      "prisma:studio": "prisma studio"
-@@ -20,6 +21,7 @@
-     "seed": "tsx ./seed-database.ts"
-   },
+
+diff --git a/apps/remix/package.json b/apps/remix/package.json
+--- a/apps/remix/package.json
++++ b/apps/remix/package.json
+@@ -16,6 +16,7 @@
    "dependencies": {
 +    "@bizrethink/customizations": "*",
-     "@prisma/client": "^6.19.0",
-     "kysely": "0.28.16",
-     "nanoid": "^5.1.6",
+     "@cantoo/pdf-lib": "^2.5.3",
+     "@documenso/api": "*",
+     "@documenso/assets": "*",

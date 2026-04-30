@@ -14,6 +14,7 @@
     "with:env": "dotenv -e ../../.env -e ../../.env.local --"
   },
   "dependencies": {
+    "@bizrethink/customizations": "*",
     "@cantoo/pdf-lib": "^2.5.3",
     "@documenso/api": "*",
     "@documenso/assets": "*",
