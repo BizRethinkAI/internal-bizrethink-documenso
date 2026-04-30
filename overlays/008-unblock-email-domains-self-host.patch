@@ -1,0 +1,98 @@
+# Why: Documenso's email-domains UI is gated behind `IS_BILLING_ENABLED()` —
+#      both the index page (`/o/<org>/settings/email-domains`) and the
+#      per-domain detail page (`/o/<org>/settings/email-domains/<id>`) early-
+#      return `null` (rendering a blank page) when billing is disabled. On a
+#      self-host where `NEXT_PUBLIC_FEATURE_BILLING_ENABLED` is unset/false,
+#      this means the email-domains feature is unreachable via UI even though:
+#        - The route exists
+#        - The TRPC procedures behind it work fine
+#        - Our BIZRETHINK claim (overlay 001) has `emailDomains: true`
+#        - The downstream UI logic correctly handles both the
+#          `isEmailDomainsEnabled` true/false cases via a separate branch
+#
+#      The early return is a self-host paywall artefact — Documenso's cloud
+#      product treats email-domains as a paid feature, so they hide the UI
+#      from non-billing customers. For self-host where the claim flag is the
+#      gate, the billing check is wrong.
+#
+#      Fix: remove the `if (!IS_BILLING_ENABLED()) return null;` block from
+#      both files. The downstream branches already handle the correct
+#      behaviour:
+#        - If claim has emailDomains: true → render the data table + add-domain
+#          dialog
+#        - If claim has emailDomains: false → render a "Currently email
+#          domains can only be configured for Platform and above plans"
+#          alert with a link to billing (which is harmless on self-host and
+#          would never display for our BIZRETHINK orgs)
+#
+#      The unused `IS_BILLING_ENABLED` import is removed from both files to
+#      satisfy lint.
+#
+# Why-not-additive: the gate lives inside the route component's render
+#      function. The only way to bypass it is to edit the component. There
+#      is no prop, env var, or feature flag exposed by upstream for this.
+#
+# Upstream-merge-fragility: LOW. Two surgical removals (one early-return
+#      block + one unused import per file). Documenso doesn't change these
+#      route files frequently — last-touch git log shows email-domains was
+#      added in mid-2025 and the file structure has been stable since.
+#
+# Side note: this is the SAME paywall pattern we'll likely hit again on:
+#        - branding settings UI (`o.$orgUrl.settings.branding.tsx`)
+#        - org-settings layout that may suppress nav links
+#      Audit those as part of cutover prep if branding-per-tenant is needed.
+#      Today, only email-domains is blocking Phase A.
+#
+# Status: APPLIED 2026-04-30 (Phase A blocker — caught when the user opened
+#         /o/mfg/settings/email-domains and saw a blank page).
+
+diff --git a/apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.email-domains._index.tsx b/apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.email-domains._index.tsx
+--- a/apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.email-domains._index.tsx
++++ b/apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.email-domains._index.tsx
+@@ -4,7 +4,6 @@ import { Link } from 'react-router';
+
+ import { useCurrentOrganisation } from '@documenso/lib/client-only/providers/organisation';
+ import { useSession } from '@documenso/lib/client-only/providers/session';
+-import { IS_BILLING_ENABLED } from '@documenso/lib/constants/app';
+ import { canExecuteOrganisationAction, isPersonalLayout } from '@documenso/lib/utils/organisations';
+ import { Alert, AlertDescription, AlertTitle } from '@documenso/ui/primitives/alert';
+ import { Button } from '@documenso/ui/primitives/button';
+@@ -28,9 +27,10 @@ export default function OrganisationSettingsEmailDomains() {
+
+   const isEmailDomainsEnabled = organisation.organisationClaim.flags.emailDomains;
+
+-  if (!IS_BILLING_ENABLED()) {
+-    return null;
+-  }
++  // MODIFIED for BizRethink: removed `if (!IS_BILLING_ENABLED()) return null;`
++  // — on self-host, billing is always disabled but the BIZRETHINK claim has
++  // emailDomains: true, so the UI should render. The downstream branch already
++  // handles the case where the claim flag is false. See overlays/008.
+
+   return (
+     <div>
+
+diff --git a/apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.email-domains.$id.tsx b/apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.email-domains.$id.tsx
+--- a/apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.email-domains.$id.tsx
++++ b/apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.email-domains.$id.tsx
+@@ -7,7 +7,6 @@ import { EditIcon, MoreHorizontalIcon, Trash2Icon } from 'lucide-react';
+ import { Link } from 'react-router';
+
+ import { useCurrentOrganisation } from '@documenso/lib/client-only/providers/organisation';
+-import { IS_BILLING_ENABLED } from '@documenso/lib/constants/app';
+ import { generateEmailDomainRecords } from '@documenso/lib/utils/email-domains';
+ import { trpc } from '@documenso/trpc/react';
+ import type { TGetOrganisationEmailDomainResponse } from '@documenso/trpc/server/enterprise-router/get-organisation-email-domain.types';
+@@ -100,9 +99,9 @@ export default function OrganisationEmailDomainSettingsPage({ params }: Route.Co
+     ] satisfies DataTableColumnDef<TGetOrganisationEmailDomainResponse['emails'][number]>[];
+   }, [organisation]);
+
+-  if (!IS_BILLING_ENABLED()) {
+-    return null;
+-  }
++  // MODIFIED for BizRethink: removed `if (!IS_BILLING_ENABLED()) return null;`
++  // — on self-host, billing is always disabled but the BIZRETHINK claim has
++  // emailDomains: true, so the UI should render. See overlays/008.
+
+   if (isLoadingEmailDomain) {
+     return <SpinnerBox className="py-32" />;

@@ -4,7 +4,6 @@ import { Link } from 'react-router';
 
 import { useCurrentOrganisation } from '@documenso/lib/client-only/providers/organisation';
 import { useSession } from '@documenso/lib/client-only/providers/session';
-import { IS_BILLING_ENABLED } from '@documenso/lib/constants/app';
 import { canExecuteOrganisationAction, isPersonalLayout } from '@documenso/lib/utils/organisations';
 import { Alert, AlertDescription, AlertTitle } from '@documenso/ui/primitives/alert';
 import { Button } from '@documenso/ui/primitives/button';
@@ -28,9 +27,10 @@ export default function OrganisationSettingsEmailDomains() {
 
   const isEmailDomainsEnabled = organisation.organisationClaim.flags.emailDomains;
 
-  if (!IS_BILLING_ENABLED()) {
-    return null;
-  }
+  // MODIFIED for BizRethink: removed `if (!IS_BILLING_ENABLED()) return null;`
+  // — on self-host, billing is always disabled but the BIZRETHINK claim has
+  // emailDomains: true, so the UI should render. The downstream branch already
+  // handles the case where the claim flag is false. See overlays/008.
 
   return (
     <div>

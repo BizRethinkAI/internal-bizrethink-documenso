@@ -7,7 +7,6 @@ import { EditIcon, MoreHorizontalIcon, Trash2Icon } from 'lucide-react';
 import { Link } from 'react-router';
 
 import { useCurrentOrganisation } from '@documenso/lib/client-only/providers/organisation';
-import { IS_BILLING_ENABLED } from '@documenso/lib/constants/app';
 import { generateEmailDomainRecords } from '@documenso/lib/utils/email-domains';
 import { trpc } from '@documenso/trpc/react';
 import type { TGetOrganisationEmailDomainResponse } from '@documenso/trpc/server/enterprise-router/get-organisation-email-domain.types';
@@ -65,7 +64,7 @@ export default function OrganisationEmailDomainSettingsPage({ params }: Route.Co
         cell: ({ row }) => (
           <DropdownMenu>
             <DropdownMenuTrigger>
-              <MoreHorizontalIcon className="text-muted-foreground h-5 w-5" />
+              <MoreHorizontalIcon className="h-5 w-5 text-muted-foreground" />
             </DropdownMenuTrigger>
 
             <DropdownMenuContent className="w-52" align="start" forceMount>
@@ -100,9 +99,9 @@ export default function OrganisationEmailDomainSettingsPage({ params }: Route.Co
     ] satisfies DataTableColumnDef<TGetOrganisationEmailDomainResponse['emails'][number]>[];
   }, [organisation]);
 
-  if (!IS_BILLING_ENABLED()) {
-    return null;
-  }
+  // MODIFIED for BizRethink: removed `if (!IS_BILLING_ENABLED()) return null;`
+  // — on self-host, billing is always disabled but the BIZRETHINK claim has
+  // emailDomains: true, so the UI should render. See overlays/008.
 
   if (isLoadingEmailDomain) {
     return <SpinnerBox className="py-32" />;
