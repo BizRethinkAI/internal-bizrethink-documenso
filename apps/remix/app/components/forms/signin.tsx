@@ -78,6 +78,8 @@ export type SignInFormProps = {
   isOIDCSSOEnabled?: boolean;
   oidcProviderLabel?: string;
   returnTo?: string;
+  // ADDED for BizRethink (overlay 015): captcha site-key flows in via SSR.
+  turnstileSiteKey?: string;
 };
 
 export const SignInForm = ({
@@ -88,6 +90,7 @@ export const SignInForm = ({
   isOIDCSSOEnabled,
   oidcProviderLabel,
   returnTo,
+  turnstileSiteKey: turnstileSiteKeyProp,
 }: SignInFormProps) => {
   const { _ } = useLingui();
   const { toast } = useToast();
@@ -104,7 +107,8 @@ export const SignInForm = ({
 
   const hasSocialAuthEnabled = isGoogleSSOEnabled || isMicrosoftSSOEnabled || isOIDCSSOEnabled;
 
-  const turnstileSiteKey = env('NEXT_PUBLIC_TURNSTILE_SITE_KEY');
+  // MODIFIED for BizRethink (overlay 015): prop wins, fall back to env at render.
+  const turnstileSiteKey = turnstileSiteKeyProp || env('NEXT_PUBLIC_TURNSTILE_SITE_KEY');
   const turnstileRef = useRef<TurnstileInstance>(null);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 

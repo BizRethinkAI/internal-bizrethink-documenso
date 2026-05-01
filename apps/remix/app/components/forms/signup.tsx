@@ -73,6 +73,8 @@ export type SignUpFormProps = {
   isMicrosoftSSOEnabled?: boolean;
   isOIDCSSOEnabled?: boolean;
   returnTo?: string;
+  // ADDED for BizRethink (overlay 015): captcha site-key flows in via SSR.
+  turnstileSiteKey?: string;
 };
 
 export const SignUpForm = ({
@@ -82,6 +84,7 @@ export const SignUpForm = ({
   isMicrosoftSSOEnabled,
   isOIDCSSOEnabled,
   returnTo,
+  turnstileSiteKey: turnstileSiteKeyProp,
 }: SignUpFormProps) => {
   const { _ } = useLingui();
   const { toast } = useToast();
@@ -92,7 +95,8 @@ export const SignUpForm = ({
 
   const utmSrc = searchParams.get('utm_source') ?? null;
 
-  const turnstileSiteKey = env('NEXT_PUBLIC_TURNSTILE_SITE_KEY');
+  // MODIFIED for BizRethink (overlay 015): prop wins, fall back to env at render.
+  const turnstileSiteKey = turnstileSiteKeyProp || env('NEXT_PUBLIC_TURNSTILE_SITE_KEY');
   const turnstileRef = useRef<TurnstileInstance>(null);
 
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);

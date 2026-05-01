@@ -29,14 +29,23 @@ export function meta() {
 export async function loader({ request }: Route.LoaderArgs) {
   const { isAuthenticated } = await getOptionalSession(request);
 
-  // SSO enable flags + OIDC label via DB-aware getters.
-  const [isGoogleSSOEnabled, isMicrosoftSSOEnabled, isOIDCSSOEnabled, oidcProviderLabel] =
-    await Promise.all([
-      isGoogleSsoEnabled(),
-      isMicrosoftSsoEnabled(),
-      isOidcSsoEnabled(),
-      getOidcProviderLabel(),
-    ]);
+  // SSO + captcha config via DB-aware getters.
+  const { getTurnstileSiteKey } = await import(
+    '@bizrethink/customizations/server-only/captcha-config'
+  );
+  const [
+    isGoogleSSOEnabled,
+    isMicrosoftSSOEnabled,
+    isOIDCSSOEnabled,
+    oidcProviderLabel,
+    turnstileSiteKey,
+  ] = await Promise.all([
+    isGoogleSsoEnabled(),
+    isMicrosoftSsoEnabled(),
+    isOidcSsoEnabled(),
+    getOidcProviderLabel(),
+    getTurnstileSiteKey(),
+  ]);
 
   // MODIFIED for BizRethink (overlay 012): resolve signup-disabled in the
   // loader so the JSX below can use a static prop instead of reading env at
@@ -61,6 +70,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     oidcProviderLabel,
     returnTo,
     isSignupDisabled,
+    turnstileSiteKey,
   };
 }
 
@@ -72,6 +82,7 @@ export default function SignIn({ loaderData }: Route.ComponentProps) {
     oidcProviderLabel,
     returnTo,
     isSignupDisabled,
+    turnstileSiteKey,
   } = loaderData;
 
   const { _ } = useLingui();
@@ -114,6 +125,7 @@ export default function SignIn({ loaderData }: Route.ComponentProps) {
           isOIDCSSOEnabled={isOIDCSSOEnabled}
           oidcProviderLabel={oidcProviderLabel}
           returnTo={returnTo}
+          turnstileSiteKey={turnstileSiteKey}
         />
 
         {!isEmbeddedRedirect && !isSignupDisabled && (

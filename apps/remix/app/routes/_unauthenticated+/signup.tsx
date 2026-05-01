@@ -1,4 +1,6 @@
 // MODIFIED for BizRethink (overlay 012): use DB-aware isSignupDisabled.
+// MODIFIED for BizRethink (overlay 015): use DB-aware turnstileSiteKey.
+import { getTurnstileSiteKey } from '@bizrethink/customizations/server-only/captcha-config';
 import { isSignupDisabled } from '@bizrethink/customizations/server-only/signup-config';
 import { msg } from '@lingui/core/macro';
 import { redirect } from 'react-router';
@@ -21,12 +23,14 @@ export function meta() {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-  // SSO enable flags via DB-aware getters.
-  const [isGoogleSSOEnabled, isMicrosoftSSOEnabled, isOIDCSSOEnabled] = await Promise.all([
-    isGoogleSsoEnabled(),
-    isMicrosoftSsoEnabled(),
-    isOidcSsoEnabled(),
-  ]);
+  // SSO enable flags + captcha site-key via DB-aware getters.
+  const [isGoogleSSOEnabled, isMicrosoftSSOEnabled, isOIDCSSOEnabled, turnstileSiteKey] =
+    await Promise.all([
+      isGoogleSsoEnabled(),
+      isMicrosoftSsoEnabled(),
+      isOidcSsoEnabled(),
+      getTurnstileSiteKey(),
+    ]);
 
   if (await isSignupDisabled()) {
     throw redirect('/signin');
@@ -41,11 +45,18 @@ export async function loader({ request }: Route.LoaderArgs) {
     isMicrosoftSSOEnabled,
     isOIDCSSOEnabled,
     returnTo,
+    turnstileSiteKey,
   };
 }
 
 export default function SignUp({ loaderData }: Route.ComponentProps) {
-  const { isGoogleSSOEnabled, isMicrosoftSSOEnabled, isOIDCSSOEnabled, returnTo } = loaderData;
+  const {
+    isGoogleSSOEnabled,
+    isMicrosoftSSOEnabled,
+    isOIDCSSOEnabled,
+    returnTo,
+    turnstileSiteKey,
+  } = loaderData;
 
   return (
     <SignUpForm
@@ -54,6 +65,7 @@ export default function SignUp({ loaderData }: Route.ComponentProps) {
       isMicrosoftSSOEnabled={isMicrosoftSSOEnabled}
       isOIDCSSOEnabled={isOIDCSSOEnabled}
       returnTo={returnTo}
+      turnstileSiteKey={turnstileSiteKey}
     />
   );
 }

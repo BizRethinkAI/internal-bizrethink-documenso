@@ -1,3 +1,8 @@
+// ADDED for BizRethink (overlay 015): captcha section schema.
+import {
+  SITE_SETTINGS_CAPTCHA_ID,
+  ZSiteSettingsCaptchaSchema,
+} from '@bizrethink/customizations/server-only/site-settings/schemas/captcha';
 // ADDED for BizRethink (overlay 012): signup section schema lives in our package.
 import {
   SITE_SETTINGS_SIGNUP_ID,
@@ -44,16 +49,21 @@ type TBannerFormSchema = z.infer<typeof ZBannerFormSchema>;
 const ZSignupFormSchema = ZSiteSettingsSignupSchema;
 type TSignupFormSchema = z.infer<typeof ZSignupFormSchema>;
 
+// ADDED for BizRethink (overlay 015): captcha section.
+const ZCaptchaFormSchema = ZSiteSettingsCaptchaSchema;
+type TCaptchaFormSchema = z.infer<typeof ZCaptchaFormSchema>;
+
 export async function loader() {
   const all = await getSiteSettings();
   const banner = all.find((setting) => setting.id === SITE_SETTINGS_BANNER_ID);
   const signup = all.find((setting) => setting.id === SITE_SETTINGS_SIGNUP_ID);
+  const captcha = all.find((setting) => setting.id === SITE_SETTINGS_CAPTCHA_ID);
 
-  return { banner, signup };
+  return { banner, signup, captcha };
 }
 
 export default function AdminBannerPage({ loaderData }: Route.ComponentProps) {
-  const { banner, signup } = loaderData;
+  const { banner, signup, captcha } = loaderData;
 
   const { toast } = useToast();
   const { _ } = useLingui();
@@ -81,6 +91,19 @@ export default function AdminBannerPage({ loaderData }: Route.ComponentProps) {
       data: {
         signupDisabled: signup?.data?.signupDisabled ?? false,
         allowedDomains: signup?.data?.allowedDomains ?? [],
+      },
+    },
+  });
+
+  // ADDED for BizRethink (overlay 015): captcha section form.
+  const captchaForm = useForm<TCaptchaFormSchema>({
+    resolver: zodResolver(ZCaptchaFormSchema),
+    defaultValues: {
+      id: SITE_SETTINGS_CAPTCHA_ID,
+      enabled: captcha?.enabled ?? false,
+      data: {
+        siteKey: captcha?.data?.siteKey ?? '',
+        secretKey: captcha?.data?.secretKey ?? '',
       },
     },
   });
@@ -354,6 +377,112 @@ export default function AdminBannerPage({ loaderData }: Route.ComponentProps) {
                 className="mt-4 justify-end self-end"
               >
                 <Trans>Update signup gating</Trans>
+              </Button>
+            </form>
+          </Form>
+        </div>
+
+        {/* ADDED for BizRethink (overlay 015): captcha (Cloudflare Turnstile) section. */}
+        <div className="mt-12">
+          <h2 className="font-semibold">
+            <Trans>Captcha (Cloudflare Turnstile)</Trans>
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            <Trans>
+              When enabled, signin and signup forms render a Turnstile widget. DB-backed config
+              overrides NEXT_PUBLIC_TURNSTILE_SITE_KEY and NEXT_PRIVATE_TURNSTILE_SECRET_KEY.
+            </Trans>
+          </p>
+
+          <Form {...captchaForm}>
+            <form
+              className="mt-4 flex flex-col gap-4 rounded-md"
+              onSubmit={captchaForm.handleSubmit(async ({ id, enabled, data }) => {
+                try {
+                  await updateSiteSetting({ id, enabled, data });
+                  toast({
+                    title: _(msg`Captcha config saved`),
+                  });
+                  await revalidate();
+                } catch (err) {
+                  toast({
+                    title: _(msg`An unknown error occurred`),
+                    description:
+                      err instanceof Error ? err.message : _(msg`Please try again later.`),
+                    variant: 'destructive',
+                  });
+                }
+              })}
+            >
+              <FormField
+                control={captchaForm.control}
+                name="enabled"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      <Trans>Enabled</Trans>
+                    </FormLabel>
+                    <FormControl>
+                      <div>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={captchaForm.control}
+                name="data.siteKey"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      <Trans>Site key (public)</Trans>
+                    </FormLabel>
+                    <FormControl>
+                      <input
+                        type="text"
+                        className="rounded-md border px-3 py-2 text-sm"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={captchaForm.control}
+                name="data.secretKey"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      <Trans>Secret key (server-side)</Trans>
+                    </FormLabel>
+                    <FormControl>
+                      <input
+                        type="password"
+                        className="rounded-md border px-3 py-2 text-sm"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      <Trans>
+                        Stored cleartext in SiteSettings.data JSON. Postgres column-level access
+                        should be restricted to the app role.
+                      </Trans>
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Button
+                type="submit"
+                loading={isUpdateSiteSettingLoading}
+                className="mt-4 justify-end self-end"
+              >
+                <Trans>Update captcha config</Trans>
               </Button>
             </form>
           </Form>

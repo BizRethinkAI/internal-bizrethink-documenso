@@ -25,7 +25,11 @@ export const verifyCaptchaToken = async ({
   token?: string | null;
   ipAddress?: string | null;
 }) => {
-  const secretKey = process.env.NEXT_PRIVATE_TURNSTILE_SECRET_KEY;
+  // MODIFIED for BizRethink (overlay 015): DB-backed secret key takes precedence.
+  const { getTurnstileSecretKey } = await import(
+    '@bizrethink/customizations/server-only/captcha-config'
+  );
+  const secretKey = await getTurnstileSecretKey();
 
   // If no secret key is configured, skip verification.
   if (!secretKey) {
