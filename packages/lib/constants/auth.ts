@@ -10,21 +10,38 @@ export const IDENTITY_PROVIDER_NAME: Record<string, string> = {
   OIDC: 'OIDC',
 };
 
-export const IS_GOOGLE_SSO_ENABLED = Boolean(
-  env('NEXT_PRIVATE_GOOGLE_CLIENT_ID') && env('NEXT_PRIVATE_GOOGLE_CLIENT_SECRET'),
-);
+// MODIFIED for BizRethink (overlay 014): converted from sync booleans to
+// async getters so the admin UI can enable/disable providers without
+// redeploy. The DB row takes precedence; env values are the bootstrap
+// fallback for fresh instances.
 
-export const IS_MICROSOFT_SSO_ENABLED = Boolean(
-  env('NEXT_PRIVATE_MICROSOFT_CLIENT_ID') && env('NEXT_PRIVATE_MICROSOFT_CLIENT_SECRET'),
-);
+export const isGoogleSsoEnabled = async (): Promise<boolean> => {
+  const { getProviderConfig } = await import(
+    '@bizrethink/customizations/server-only/sso-provider-config'
+  );
+  return (await getProviderConfig('google')).enabled;
+};
 
-export const IS_OIDC_SSO_ENABLED = Boolean(
-  env('NEXT_PRIVATE_OIDC_WELL_KNOWN') &&
-    env('NEXT_PRIVATE_OIDC_CLIENT_ID') &&
-    env('NEXT_PRIVATE_OIDC_CLIENT_SECRET'),
-);
+export const isMicrosoftSsoEnabled = async (): Promise<boolean> => {
+  const { getProviderConfig } = await import(
+    '@bizrethink/customizations/server-only/sso-provider-config'
+  );
+  return (await getProviderConfig('microsoft')).enabled;
+};
 
-export const OIDC_PROVIDER_LABEL = env('NEXT_PRIVATE_OIDC_PROVIDER_LABEL');
+export const isOidcSsoEnabled = async (): Promise<boolean> => {
+  const { getProviderConfig } = await import(
+    '@bizrethink/customizations/server-only/sso-provider-config'
+  );
+  return (await getProviderConfig('oidc')).enabled;
+};
+
+export const getOidcProviderLabel = async (): Promise<string> => {
+  const { getProviderConfig } = await import(
+    '@bizrethink/customizations/server-only/sso-provider-config'
+  );
+  return (await getProviderConfig('oidc')).oidcProviderLabel || 'OIDC';
+};
 
 export const USER_SECURITY_AUDIT_LOG_MAP: Record<string, string> = {
   ACCOUNT_SSO_LINK: 'Linked account to SSO',

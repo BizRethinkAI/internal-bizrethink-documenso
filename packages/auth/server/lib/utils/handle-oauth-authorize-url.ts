@@ -68,9 +68,22 @@ export const handleOAuthAuthorizeUrl = async (options: HandleOAuthAuthorizeUrlOp
     scopes,
   );
 
-  // Pass the prompt to the authorization endpoint.
-  if (process.env.NEXT_PRIVATE_OIDC_PROMPT && isOidcPrompt(process.env.NEXT_PRIVATE_OIDC_PROMPT)) {
-    prompt = process.env.NEXT_PRIVATE_OIDC_PROMPT;
+  // MODIFIED for BizRethink (overlay 014): OIDC prompt comes from DB row first.
+  // Only relevant when clientOptions.id === 'oidc'.
+  if (clientOptions.id === 'oidc') {
+    const { getProviderConfig } = await import(
+      '@bizrethink/customizations/server-only/sso-provider-config'
+    );
+    const oidcCfg = await getProviderConfig('oidc');
+    const dbPrompt = oidcCfg.oidcPrompt;
+    if (dbPrompt && isOidcPrompt(dbPrompt)) {
+      prompt = dbPrompt;
+    } else if (
+      process.env.NEXT_PRIVATE_OIDC_PROMPT &&
+      isOidcPrompt(process.env.NEXT_PRIVATE_OIDC_PROMPT)
+    ) {
+      prompt = process.env.NEXT_PRIVATE_OIDC_PROMPT;
+    }
   }
 
   url.searchParams.set('prompt', prompt);

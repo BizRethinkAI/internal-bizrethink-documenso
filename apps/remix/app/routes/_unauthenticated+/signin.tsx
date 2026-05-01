@@ -7,10 +7,11 @@ import { Link, redirect, useSearchParams } from 'react-router';
 
 import { getOptionalSession } from '@documenso/auth/server/lib/utils/get-session';
 import {
-  IS_GOOGLE_SSO_ENABLED,
-  IS_MICROSOFT_SSO_ENABLED,
-  IS_OIDC_SSO_ENABLED,
-  OIDC_PROVIDER_LABEL,
+  // MODIFIED for BizRethink (overlay 014): async getters for SSO flags + OIDC label.
+  getOidcProviderLabel,
+  isGoogleSsoEnabled,
+  isMicrosoftSsoEnabled,
+  isOidcSsoEnabled,
 } from '@documenso/lib/constants/auth';
 import { isValidReturnTo, normalizeReturnTo } from '@documenso/lib/utils/is-valid-return-to';
 import { Alert, AlertDescription } from '@documenso/ui/primitives/alert';
@@ -28,11 +29,14 @@ export function meta() {
 export async function loader({ request }: Route.LoaderArgs) {
   const { isAuthenticated } = await getOptionalSession(request);
 
-  // SSR env variables.
-  const isGoogleSSOEnabled = IS_GOOGLE_SSO_ENABLED;
-  const isMicrosoftSSOEnabled = IS_MICROSOFT_SSO_ENABLED;
-  const isOIDCSSOEnabled = IS_OIDC_SSO_ENABLED;
-  const oidcProviderLabel = OIDC_PROVIDER_LABEL;
+  // SSO enable flags + OIDC label via DB-aware getters.
+  const [isGoogleSSOEnabled, isMicrosoftSSOEnabled, isOIDCSSOEnabled, oidcProviderLabel] =
+    await Promise.all([
+      isGoogleSsoEnabled(),
+      isMicrosoftSsoEnabled(),
+      isOidcSsoEnabled(),
+      getOidcProviderLabel(),
+    ]);
 
   // MODIFIED for BizRethink (overlay 012): resolve signup-disabled in the
   // loader so the JSX below can use a static prop instead of reading env at

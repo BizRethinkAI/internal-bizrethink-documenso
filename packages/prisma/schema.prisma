@@ -1281,4 +1281,33 @@ model BizrethinkInstanceStorageConfig {
   updatedByUserId Int?
 }
 
+// ─── Phase F (overlay 014) — SSO provider config ──────────────────────────
+//
+// One row per provider (google / microsoft / oidc). Replaces the 9
+// NEXT_PRIVATE_GOOGLE_*/MICROSOFT_*/OIDC_* env vars. Per-provider
+// `enabled` toggles whether the provider is wired in at runtime.
+//
+// Falls back to env reads when no row exists for a provider.
+
+model BizrethinkSsoProvider {
+  // 'google' | 'microsoft' | 'oidc'.
+  provider String @id
+
+  enabled Boolean @default(false)
+
+  // Encrypted at rest with NEXT_PRIVATE_ENCRYPTION_KEY.
+  clientId     String?
+  clientSecret String?
+
+  // OIDC-only. wellKnownUrl + label + skipVerify + prompt.
+  oidcWellKnownUrl   String?
+  oidcProviderLabel  String?
+  oidcSkipVerify     Boolean @default(false)
+  // 'none' | 'login' | 'consent' | 'select_account'. Empty = use provider default.
+  oidcPrompt String?
+
+  updatedAt       DateTime @updatedAt
+  updatedByUserId Int?
+}
+
 // BIZRETHINK_ADDITIONS_END

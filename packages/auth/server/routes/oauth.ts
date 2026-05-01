@@ -2,7 +2,8 @@ import { sValidator } from '@hono/standard-validator';
 import { Hono } from 'hono';
 import { z } from 'zod';
 
-import { GoogleAuthOptions, MicrosoftAuthOptions, OidcAuthOptions } from '../config';
+// MODIFIED for BizRethink (overlay 014): use async getters.
+import { getGoogleAuthOptions, getMicrosoftAuthOptions, getOidcAuthOptions } from '../config';
 import { handleOAuthAuthorizeUrl } from '../lib/utils/handle-oauth-authorize-url';
 import { getOrganisationAuthenticationPortalOptions } from '../lib/utils/organisation-portal';
 import type { HonoAuthContext } from '../types/context';
@@ -20,7 +21,7 @@ export const oauthRoute = new Hono<HonoAuthContext>()
 
     return handleOAuthAuthorizeUrl({
       c,
-      clientOptions: GoogleAuthOptions,
+      clientOptions: await getGoogleAuthOptions(),
       redirectPath,
     });
   })
@@ -33,7 +34,7 @@ export const oauthRoute = new Hono<HonoAuthContext>()
 
     return handleOAuthAuthorizeUrl({
       c,
-      clientOptions: MicrosoftAuthOptions,
+      clientOptions: await getMicrosoftAuthOptions(),
       redirectPath,
     });
   })
@@ -46,7 +47,7 @@ export const oauthRoute = new Hono<HonoAuthContext>()
 
     return handleOAuthAuthorizeUrl({
       c,
-      clientOptions: OidcAuthOptions,
+      clientOptions: await getOidcAuthOptions(),
       redirectPath,
     });
   })

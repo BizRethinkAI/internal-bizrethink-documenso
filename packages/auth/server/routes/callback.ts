@@ -2,7 +2,8 @@ import { Hono } from 'hono';
 
 import { AppError } from '@documenso/lib/errors/app-error';
 
-import { GoogleAuthOptions, MicrosoftAuthOptions, OidcAuthOptions } from '../config';
+// MODIFIED for BizRethink (overlay 014): use async getters.
+import { getGoogleAuthOptions, getMicrosoftAuthOptions, getOidcAuthOptions } from '../config';
 import { handleOAuthCallbackUrl } from '../lib/utils/handle-oauth-callback-url';
 import { handleOAuthOrganisationCallbackUrl } from '../lib/utils/handle-oauth-organisation-callback-url';
 import type { HonoAuthContext } from '../types/context';
@@ -15,7 +16,9 @@ export const callbackRoute = new Hono<HonoAuthContext>()
   /**
    * OIDC callback verification.
    */
-  .get('/oidc', async (c) => handleOAuthCallbackUrl({ c, clientOptions: OidcAuthOptions }))
+  .get('/oidc', async (c) =>
+    handleOAuthCallbackUrl({ c, clientOptions: await getOidcAuthOptions() }),
+  )
 
   /**
    * Organisation OIDC callback verification.
@@ -45,11 +48,13 @@ export const callbackRoute = new Hono<HonoAuthContext>()
   /**
    * Google callback verification.
    */
-  .get('/google', async (c) => handleOAuthCallbackUrl({ c, clientOptions: GoogleAuthOptions }))
+  .get('/google', async (c) =>
+    handleOAuthCallbackUrl({ c, clientOptions: await getGoogleAuthOptions() }),
+  )
 
   /**
    * Microsoft callback verification.
    */
   .get('/microsoft', async (c) =>
-    handleOAuthCallbackUrl({ c, clientOptions: MicrosoftAuthOptions }),
+    handleOAuthCallbackUrl({ c, clientOptions: await getMicrosoftAuthOptions() }),
   );

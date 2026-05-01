@@ -3,10 +3,11 @@ import { isSignupDisabled } from '@bizrethink/customizations/server-only/signup-
 import { msg } from '@lingui/core/macro';
 import { redirect } from 'react-router';
 
+// MODIFIED for BizRethink (overlay 014): SSO enable flags are async getters now.
 import {
-  IS_GOOGLE_SSO_ENABLED,
-  IS_MICROSOFT_SSO_ENABLED,
-  IS_OIDC_SSO_ENABLED,
+  isGoogleSsoEnabled,
+  isMicrosoftSsoEnabled,
+  isOidcSsoEnabled,
 } from '@documenso/lib/constants/auth';
 import { isValidReturnTo, normalizeReturnTo } from '@documenso/lib/utils/is-valid-return-to';
 
@@ -20,10 +21,12 @@ export function meta() {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-  // SSR env variables.
-  const isGoogleSSOEnabled = IS_GOOGLE_SSO_ENABLED;
-  const isMicrosoftSSOEnabled = IS_MICROSOFT_SSO_ENABLED;
-  const isOIDCSSOEnabled = IS_OIDC_SSO_ENABLED;
+  // SSO enable flags via DB-aware getters.
+  const [isGoogleSSOEnabled, isMicrosoftSSOEnabled, isOIDCSSOEnabled] = await Promise.all([
+    isGoogleSsoEnabled(),
+    isMicrosoftSsoEnabled(),
+    isOidcSsoEnabled(),
+  ]);
 
   if (await isSignupDisabled()) {
     throw redirect('/signin');

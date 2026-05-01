@@ -7,6 +7,7 @@ import {
   DatabaseIcon,
   FileStack,
   KeyRoundIcon,
+  LogInIcon,
   MailIcon,
   Settings,
   Trophy,
@@ -215,6 +216,21 @@ export default function AdminLayout({ loaderData }: Route.ComponentProps) {
             <Link to="/admin/storage">
               <DatabaseIcon className="mr-2 h-5 w-5" />
               <Trans>Storage</Trans>
+            </Link>
+          </Button>
+
+          {/* Phase F (overlay 014): SSO providers admin UI. */}
+          <Button
+            variant="ghost"
+            className={cn(
+              'justify-start md:w-full',
+              pathname?.startsWith('/admin/sso-providers') && 'bg-secondary',
+            )}
+            asChild
+          >
+            <Link to="/admin/sso-providers">
+              <LogInIcon className="mr-2 h-5 w-5" />
+              <Trans>SSO Providers</Trans>
             </Link>
           </Button>
         </div>
