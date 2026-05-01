@@ -8,6 +8,11 @@ import {
   SITE_SETTINGS_SIGNUP_ID,
   ZSiteSettingsSignupSchema,
 } from '@bizrethink/customizations/server-only/site-settings/schemas/signup';
+// ADDED for BizRethink (overlay 017): webhook section schema.
+import {
+  SITE_SETTINGS_WEBHOOK_ID,
+  ZSiteSettingsWebhookSchema,
+} from '@bizrethink/customizations/server-only/site-settings/schemas/webhook';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
@@ -53,17 +58,22 @@ type TSignupFormSchema = z.infer<typeof ZSignupFormSchema>;
 const ZCaptchaFormSchema = ZSiteSettingsCaptchaSchema;
 type TCaptchaFormSchema = z.infer<typeof ZCaptchaFormSchema>;
 
+// ADDED for BizRethink (overlay 017): webhook section.
+const ZWebhookFormSchema = ZSiteSettingsWebhookSchema;
+type TWebhookFormSchema = z.infer<typeof ZWebhookFormSchema>;
+
 export async function loader() {
   const all = await getSiteSettings();
   const banner = all.find((setting) => setting.id === SITE_SETTINGS_BANNER_ID);
   const signup = all.find((setting) => setting.id === SITE_SETTINGS_SIGNUP_ID);
   const captcha = all.find((setting) => setting.id === SITE_SETTINGS_CAPTCHA_ID);
+  const webhook = all.find((setting) => setting.id === SITE_SETTINGS_WEBHOOK_ID);
 
-  return { banner, signup, captcha };
+  return { banner, signup, captcha, webhook };
 }
 
 export default function AdminBannerPage({ loaderData }: Route.ComponentProps) {
-  const { banner, signup, captcha } = loaderData;
+  const { banner, signup, captcha, webhook } = loaderData;
 
   const { toast } = useToast();
   const { _ } = useLingui();
@@ -104,6 +114,18 @@ export default function AdminBannerPage({ loaderData }: Route.ComponentProps) {
       data: {
         siteKey: captcha?.data?.siteKey ?? '',
         secretKey: captcha?.data?.secretKey ?? '',
+      },
+    },
+  });
+
+  // ADDED for BizRethink (overlay 017): webhook section form.
+  const webhookForm = useForm<TWebhookFormSchema>({
+    resolver: zodResolver(ZWebhookFormSchema),
+    defaultValues: {
+      id: SITE_SETTINGS_WEBHOOK_ID,
+      enabled: webhook?.enabled ?? false,
+      data: {
+        ssrfBypassHosts: webhook?.data?.ssrfBypassHosts ?? [],
       },
     },
   });
@@ -483,6 +505,102 @@ export default function AdminBannerPage({ loaderData }: Route.ComponentProps) {
                 className="mt-4 justify-end self-end"
               >
                 <Trans>Update captcha config</Trans>
+              </Button>
+            </form>
+          </Form>
+        </div>
+
+        {/* ADDED for BizRethink (overlay 017): webhook SSRF bypass hosts. */}
+        <div className="mt-12">
+          <h2 className="font-semibold">
+            <Trans>Webhook SSRF bypass hosts</Trans>
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            <Trans>
+              Hostnames listed here are allowed to resolve to private/loopback addresses for
+              outbound webhook delivery. Useful for hitting Docker-internal services. Merged with
+              NEXT_PRIVATE_WEBHOOK_SSRF_BYPASS_HOSTS env var. "Enabled" must be on for the DB list
+              to take effect.
+            </Trans>
+          </p>
+
+          <Form {...webhookForm}>
+            <form
+              className="mt-4 flex flex-col gap-4 rounded-md"
+              onSubmit={webhookForm.handleSubmit(async ({ id, enabled, data }) => {
+                try {
+                  await updateSiteSetting({ id, enabled, data });
+                  toast({
+                    title: _(msg`Webhook config saved`),
+                  });
+                  await revalidate();
+                } catch (err) {
+                  toast({
+                    title: _(msg`An unknown error occurred`),
+                    description:
+                      err instanceof Error ? err.message : _(msg`Please try again later.`),
+                    variant: 'destructive',
+                  });
+                }
+              })}
+            >
+              <FormField
+                control={webhookForm.control}
+                name="enabled"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      <Trans>Enabled</Trans>
+                    </FormLabel>
+                    <FormControl>
+                      <div>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={webhookForm.control}
+                name="data.ssrfBypassHosts"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      <Trans>SSRF bypass hosts (one per line)</Trans>
+                    </FormLabel>
+                    <FormControl>
+                      <Textarea
+                        className="h-24 font-mono text-xs"
+                        value={(field.value ?? []).join('\n')}
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value
+                              .split('\n')
+                              .map((d) => d.trim())
+                              .filter(Boolean),
+                          )
+                        }
+                        placeholder="api.internal.bizrethink.ai\n10.0.0.5"
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      <Trans>
+                        Hostnames or IP literals. Webhooks targeting these hosts skip the
+                        private-address SSRF guard.
+                      </Trans>
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Button
+                type="submit"
+                loading={isUpdateSiteSettingLoading}
+                className="mt-4 justify-end self-end"
+              >
+                <Trans>Update webhook config</Trans>
               </Button>
             </form>
           </Form>

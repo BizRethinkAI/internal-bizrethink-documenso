@@ -27,45 +27,24 @@ const normalizeHostname = (hostname: string) => hostname.toLowerCase().replace(/
 const toAddressUrl = (address: string) =>
   address.includes(':') ? `http://[${address}]` : `http://${address}`;
 
-/**
- * Parse the NEXT_PRIVATE_WEBHOOK_SSRF_BYPASS_HOSTS environment variable into
- * a Set of lowercased hostnames/IPs that are allowed to resolve to private
- * addresses. The Set is built once at module load and never changes.
- *
- * Empty or unset = no bypasses (safe default).
- */
-const webhookSSRFBypassHosts = (): Set<string> => {
-  const raw = process.env['NEXT_PRIVATE_WEBHOOK_SSRF_BYPASS_HOSTS'] ?? '';
+// MODIFIED for BizRethink (overlay 017): bypass hosts come from the
+// DB-backed site.webhook SiteSettings row merged with env. The async
+// loader is dynamic-imported here to break a build-time circular dep.
+//
+// Empty or unset = no bypasses (safe default).
+const isBypassedHost = async (url: string): Promise<boolean> => {
+  const { getWebhookSsrfBypassHosts } = await import(
+    '@bizrethink/customizations/server-only/webhook-config'
+  );
+  const bypass = await getWebhookSsrfBypassHosts();
 
-  const hosts = new Set<string>();
-
-  for (const entry of raw.split(',')) {
-    const trimmed = entry.trim().toLowerCase();
-
-    if (trimmed.length > 0) {
-      hosts.add(trimmed);
-    }
-  }
-
-  return hosts;
-};
-
-const WEBHOOK_SSRF_BYPASS_HOSTS = webhookSSRFBypassHosts();
-
-/**
- * Check whether the hostname of the given URL is present in the SSRF bypass
- * list. Matches against URL.hostname which covers both DNS names and raw IP
- * addresses uniformly.
- */
-const isBypassedHost = (url: string): boolean => {
-  if (WEBHOOK_SSRF_BYPASS_HOSTS.size === 0) {
+  if (bypass.size === 0) {
     return false;
   }
 
   try {
     const hostname = normalizeHostname(new URL(url).hostname);
-
-    return WEBHOOK_SSRF_BYPASS_HOSTS.has(hostname);
+    return bypass.has(hostname);
   } catch {
     return false;
   }
@@ -83,7 +62,7 @@ export const assertNotPrivateUrl = async (
     lookup?: TLookupFn;
   },
 ) => {
-  if (isBypassedHost(url)) {
+  if (await isBypassedHost(url)) {
     return;
   }
 

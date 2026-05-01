@@ -3,6 +3,7 @@
 // schema declarations themselves out of upstream's tree.
 import { ZSiteSettingsCaptchaSchema } from '@bizrethink/customizations/server-only/site-settings/schemas/captcha';
 import { ZSiteSettingsSignupSchema } from '@bizrethink/customizations/server-only/site-settings/schemas/signup';
+import { ZSiteSettingsWebhookSchema } from '@bizrethink/customizations/server-only/site-settings/schemas/webhook';
 import { z } from 'zod';
 
 import { ZSiteSettingsBannerSchema } from './schemas/banner';
@@ -13,6 +14,7 @@ export const ZSiteSettingSchema = z.union([
   ZSiteSettingsTelemetrySchema,
   ZSiteSettingsSignupSchema,
   ZSiteSettingsCaptchaSchema,
+  ZSiteSettingsWebhookSchema,
 ]);
 
 export type TSiteSettingSchema = z.infer<typeof ZSiteSettingSchema>;
