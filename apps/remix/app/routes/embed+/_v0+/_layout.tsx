@@ -1,11 +1,12 @@
 import { Trans } from '@lingui/react/macro';
 import { Outlet, isRouteErrorResponse, useRouteError } from 'react-router';
 
+// MODIFIED for BizRethink (overlay 014): async getters for SSO flags + OIDC label.
 import {
-  IS_GOOGLE_SSO_ENABLED,
-  IS_MICROSOFT_SSO_ENABLED,
-  IS_OIDC_SSO_ENABLED,
-  OIDC_PROVIDER_LABEL,
+  getOidcProviderLabel,
+  isGoogleSsoEnabled,
+  isMicrosoftSsoEnabled,
+  isOidcSsoEnabled,
 } from '@documenso/lib/constants/auth';
 
 import { EmbedAuthenticationRequired } from '~/components/embed/embed-authentication-required';
@@ -31,12 +32,15 @@ export function headers({ loaderHeaders }: Route.HeadersArgs) {
   };
 }
 
-export function loader() {
-  // SSR env variables.
-  const isGoogleSSOEnabled = IS_GOOGLE_SSO_ENABLED;
-  const isMicrosoftSSOEnabled = IS_MICROSOFT_SSO_ENABLED;
-  const isOIDCSSOEnabled = IS_OIDC_SSO_ENABLED;
-  const oidcProviderLabel = OIDC_PROVIDER_LABEL;
+export async function loader() {
+  // SSO + label via DB-aware getters (overlay 014).
+  const [isGoogleSSOEnabled, isMicrosoftSSOEnabled, isOIDCSSOEnabled, oidcProviderLabel] =
+    await Promise.all([
+      isGoogleSsoEnabled(),
+      isMicrosoftSsoEnabled(),
+      isOidcSsoEnabled(),
+      getOidcProviderLabel(),
+    ]);
 
   return {
     isGoogleSSOEnabled,
