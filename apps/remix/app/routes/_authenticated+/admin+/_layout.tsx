@@ -5,6 +5,7 @@ import {
   BarChart3,
   Building2Icon,
   FileStack,
+  KeyRoundIcon,
   MailIcon,
   Settings,
   Trophy,
@@ -183,6 +184,21 @@ export default function AdminLayout({ loaderData }: Route.ComponentProps) {
             <Link to="/admin/site-settings">
               <Settings className="mr-2 h-5 w-5" />
               <Trans>Site Settings</Trans>
+            </Link>
+          </Button>
+
+          {/* Phase C (overlay 011): instance signing config admin UI. */}
+          <Button
+            variant="ghost"
+            className={cn(
+              'justify-start md:w-full',
+              pathname?.startsWith('/admin/signing') && 'bg-secondary',
+            )}
+            asChild
+          >
+            <Link to="/admin/signing">
+              <KeyRoundIcon className="mr-2 h-5 w-5" />
+              <Trans>Signing Config</Trans>
             </Link>
           </Button>
         </div>

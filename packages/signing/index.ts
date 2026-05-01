@@ -9,7 +9,7 @@ import {
 } from '@documenso/lib/constants/app';
 import { env } from '@documenso/lib/utils/env';
 
-import { getTimestampAuthority } from './helpers/tsa';
+import { getTimestampAuthority, resetTimestampAuthorities, seedTsaFromConfig } from './helpers/tsa';
 import { createGoogleCloudSigner } from './transports/google-cloud';
 import { createLocalSigner } from './transports/local';
 
@@ -24,7 +24,24 @@ const getSigner = async () => {
     return signer;
   }
 
-  const transport = env('NEXT_PRIVATE_SIGNING_TRANSPORT') || 'local';
+  // MODIFIED for BizRethink (overlay 011): transport selection consults the
+  // singleton `BizrethinkInstanceSigningConfig` row first (so the admin UI
+  // can flip transport without a redeploy), and falls back to env reads
+  // when the row is absent. The cert/key payloads themselves are loaded
+  // inside createLocalSigner / createGoogleCloudSigner — those functions
+  // are independently patched to consult the DB row before env.
+  const { getInstanceSigningConfig } = await import(
+    '@bizrethink/customizations/server-only/instance-signing-config'
+  );
+  const dbConfig = await getInstanceSigningConfig();
+
+  // Seed the TSA cache from DB before the first signPdf so the synchronous
+  // `getTimestampAuthority()` read inside signPdf sees the DB-sourced URLs.
+  if (dbConfig?.tsaUrls && dbConfig.tsaUrls.length > 0) {
+    seedTsaFromConfig(dbConfig.tsaUrls);
+  }
+
+  const transport = dbConfig?.transport ?? env('NEXT_PRIVATE_SIGNING_TRANSPORT') ?? 'local';
 
   // eslint-disable-next-line require-atomic-updates
   signer = await match(transport)
@@ -37,16 +54,35 @@ const getSigner = async () => {
   return signer;
 };
 
+// ADDED for BizRethink (overlay 011): expose a cache-bust hook so the admin
+// TRPC mutation that writes the singleton row can force the next signPdf
+// call to re-load the new cert + transport without a process restart.
+// Resets BOTH the in-process Signer cache and the TSA cache.
+export const resetSigningCaches = () => {
+  signer = null;
+  resetTimestampAuthorities();
+};
+
 export const signPdf = async ({ pdf }: SignOptions) => {
   const signer = await getSigner();
 
   const tsa = getTimestampAuthority();
 
+  // MODIFIED for BizRethink (overlay 011): contact info reads from the DB
+  // row first, falling back to the env helper. We DO want to await the DB
+  // lookup here because the Contact Info field is embedded into every signed
+  // PDF and changing it via admin UI shouldn't require a restart.
+  const { getInstanceSigningConfig } = await import(
+    '@bizrethink/customizations/server-only/instance-signing-config'
+  );
+  const dbConfig = await getInstanceSigningConfig();
+  const contactInfo = dbConfig?.signingContactInfo || NEXT_PUBLIC_SIGNING_CONTACT_INFO();
+
   const { bytes } = await pdf.sign({
     signer,
     reason: 'Signed by Documenso',
     location: NEXT_PUBLIC_WEBAPP_URL(),
-    contactInfo: NEXT_PUBLIC_SIGNING_CONTACT_INFO(),
+    contactInfo,
     subFilter: NEXT_PRIVATE_USE_LEGACY_SIGNING_SUBFILTER()
       ? 'adbe.pkcs7.detached'
       : 'ETSI.CAdES.detached',
