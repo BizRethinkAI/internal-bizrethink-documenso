@@ -13,7 +13,7 @@ import { ONE_HOUR, ONE_SECOND } from '../../constants/time';
 import { alphaid } from '../id';
 
 export const getPresignPostUrl = async (fileName: string, contentType: string, userId?: number) => {
-  const client = getS3Client();
+  const { client, bucket } = await getS3Client();
 
   const { getSignedUrl } = await import('@aws-sdk/s3-request-presigner');
 
@@ -40,7 +40,7 @@ export const getPresignPostUrl = async (fileName: string, contentType: string, u
   }
 
   const putObjectCommand = new PutObjectCommand({
-    Bucket: env('NEXT_PRIVATE_UPLOAD_BUCKET'),
+    Bucket: bucket,
     Key: key,
     ContentType: contentType,
   });
@@ -53,12 +53,12 @@ export const getPresignPostUrl = async (fileName: string, contentType: string, u
 };
 
 export const getAbsolutePresignPostUrl = async (key: string) => {
-  const client = getS3Client();
+  const { client, bucket } = await getS3Client();
 
   const { getSignedUrl: getS3SignedUrl } = await import('@aws-sdk/s3-request-presigner');
 
   const putObjectCommand = new PutObjectCommand({
-    Bucket: env('NEXT_PRIVATE_UPLOAD_BUCKET'),
+    Bucket: bucket,
     Key: key,
   });
 
@@ -70,27 +70,31 @@ export const getAbsolutePresignPostUrl = async (key: string) => {
 };
 
 export const getPresignGetUrl = async (key: string) => {
-  if (env('NEXT_PRIVATE_UPLOAD_DISTRIBUTION_DOMAIN')) {
-    const distributionUrl = new URL(key, `${env('NEXT_PRIVATE_UPLOAD_DISTRIBUTION_DOMAIN')}`);
+  // MODIFIED for BizRethink (overlay 013): distribution settings come from
+  // BizrethinkInstanceStorageConfig first, with env fallback.
+  const settings = await resolveStorageSettings();
+
+  if (settings.distributionDomain) {
+    const distributionUrl = new URL(key, settings.distributionDomain);
 
     const { getSignedUrl: getCloudfrontSignedUrl } = await import('@aws-sdk/cloudfront-signer');
 
     const url = getCloudfrontSignedUrl({
       url: distributionUrl.toString(),
-      keyPairId: `${env('NEXT_PRIVATE_UPLOAD_DISTRIBUTION_KEY_ID')}`,
-      privateKey: `${env('NEXT_PRIVATE_UPLOAD_DISTRIBUTION_KEY_CONTENTS')}`,
+      keyPairId: `${settings.distributionKeyId}`,
+      privateKey: `${settings.distributionKeyPem}`,
       dateLessThan: new Date(Date.now() + ONE_HOUR).toISOString(),
     });
 
     return { key, url };
   }
 
-  const client = getS3Client();
+  const { client, bucket } = await getS3Client();
 
   const { getSignedUrl: getS3SignedUrl } = await import('@aws-sdk/s3-request-presigner');
 
   const getObjectCommand = new GetObjectCommand({
-    Bucket: env('NEXT_PRIVATE_UPLOAD_BUCKET'),
+    Bucket: bucket,
     Key: key,
   });
 
@@ -105,7 +109,7 @@ export const getPresignGetUrl = async (key: string) => {
  * Uploads a file to S3.
  */
 export const uploadS3File = async (file: File) => {
-  const client = getS3Client();
+  const { client, bucket } = await getS3Client();
 
   // Get the basename and extension for the file
   const { name, ext } = path.parse(file.name);
@@ -116,7 +120,7 @@ export const uploadS3File = async (file: File) => {
 
   const response = await client.send(
     new PutObjectCommand({
-      Bucket: env('NEXT_PRIVATE_UPLOAD_BUCKET'),
+      Bucket: bucket,
       Key: key,
       Body: Buffer.from(fileBuffer),
       ContentType: file.type,
@@ -127,35 +131,66 @@ export const uploadS3File = async (file: File) => {
 };
 
 export const deleteS3File = async (key: string) => {
-  const client = getS3Client();
+  const { client, bucket } = await getS3Client();
 
   await client.send(
     new DeleteObjectCommand({
-      Bucket: env('NEXT_PRIVATE_UPLOAD_BUCKET'),
+      Bucket: bucket,
       Key: key,
     }),
   );
 };
 
-const getS3Client = () => {
-  const NEXT_PUBLIC_UPLOAD_TRANSPORT = env('NEXT_PUBLIC_UPLOAD_TRANSPORT');
+// MODIFIED for BizRethink (overlay 013): resolved settings come from
+// BizrethinkInstanceStorageConfig singleton row first, with env fallback.
+type ResolvedStorageSettings = {
+  bucket: string | undefined;
+  endpoint: string | undefined;
+  forcePathStyle: boolean;
+  region: string;
+  accessKeyId: string | undefined;
+  secretAccessKey: string | undefined;
+  distributionDomain: string | undefined;
+  distributionKeyId: string | undefined;
+  distributionKeyPem: string | undefined;
+};
 
-  if (NEXT_PUBLIC_UPLOAD_TRANSPORT !== 's3') {
-    throw new Error('Invalid upload transport');
-  }
+const resolveStorageSettings = async (): Promise<ResolvedStorageSettings> => {
+  const { getInstanceStorageConfig } = await import(
+    '@bizrethink/customizations/server-only/instance-storage-config'
+  );
+  const db = await getInstanceStorageConfig();
 
-  const hasCredentials =
-    env('NEXT_PRIVATE_UPLOAD_ACCESS_KEY_ID') && env('NEXT_PRIVATE_UPLOAD_SECRET_ACCESS_KEY');
+  return {
+    bucket: db?.s3Bucket ?? env('NEXT_PRIVATE_UPLOAD_BUCKET'),
+    endpoint: db?.s3Endpoint ?? env('NEXT_PRIVATE_UPLOAD_ENDPOINT') ?? undefined,
+    forcePathStyle: db?.s3ForcePathStyle ?? env('NEXT_PRIVATE_UPLOAD_FORCE_PATH_STYLE') === 'true',
+    region: db?.s3Region ?? env('NEXT_PRIVATE_UPLOAD_REGION') ?? 'us-east-1',
+    accessKeyId: db?.s3AccessKeyId ?? env('NEXT_PRIVATE_UPLOAD_ACCESS_KEY_ID'),
+    secretAccessKey: db?.s3SecretAccessKey ?? env('NEXT_PRIVATE_UPLOAD_SECRET_ACCESS_KEY'),
+    distributionDomain: db?.s3DistributionDomain ?? env('NEXT_PRIVATE_UPLOAD_DISTRIBUTION_DOMAIN'),
+    distributionKeyId: db?.s3DistributionKeyId ?? env('NEXT_PRIVATE_UPLOAD_DISTRIBUTION_KEY_ID'),
+    distributionKeyPem:
+      db?.s3DistributionKeyPem ?? env('NEXT_PRIVATE_UPLOAD_DISTRIBUTION_KEY_CONTENTS'),
+  };
+};
 
-  return new S3Client({
-    endpoint: env('NEXT_PRIVATE_UPLOAD_ENDPOINT') || undefined,
-    forcePathStyle: env('NEXT_PRIVATE_UPLOAD_FORCE_PATH_STYLE') === 'true',
-    region: env('NEXT_PRIVATE_UPLOAD_REGION') || 'us-east-1',
+const getS3Client = async (): Promise<{ client: S3Client; bucket: string | undefined }> => {
+  const settings = await resolveStorageSettings();
+
+  const hasCredentials = settings.accessKeyId && settings.secretAccessKey;
+
+  const client = new S3Client({
+    endpoint: settings.endpoint,
+    forcePathStyle: settings.forcePathStyle,
+    region: settings.region,
     credentials: hasCredentials
       ? {
-          accessKeyId: String(env('NEXT_PRIVATE_UPLOAD_ACCESS_KEY_ID')),
-          secretAccessKey: String(env('NEXT_PRIVATE_UPLOAD_SECRET_ACCESS_KEY')),
+          accessKeyId: String(settings.accessKeyId),
+          secretAccessKey: String(settings.secretAccessKey),
         }
       : undefined,
   });
+
+  return { client, bucket: settings.bucket };
 };

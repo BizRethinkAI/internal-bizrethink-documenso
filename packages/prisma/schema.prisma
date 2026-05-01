@@ -1242,4 +1242,43 @@ model BizrethinkInstanceSigningConfig {
   updatedByUserId Int?
 }
 
+// ─── Phase E (overlay 013) — instance storage config ──────────────────────
+//
+// Singleton row holding the file-storage configuration: transport
+// (database vs s3) plus all S3 connection details when transport=s3.
+// Replaces five NEXT_PRIVATE_UPLOAD_* env vars + NEXT_PUBLIC_UPLOAD_TRANSPORT.
+//
+// Falls back to env reads when the row is absent. After the admin saves a
+// row via /admin/storage, the in-memory S3Client cache is busted so the
+// next file write/read hits the new transport.
+//
+// Migration of existing PDFs from db→s3 is OUT OF SCOPE here — that's a
+// separate one-shot script. This UI just toggles the transport for new
+// uploads.
+
+model BizrethinkInstanceStorageConfig {
+  id String @id @default("singleton")
+
+  // 'database' (Postgres bytea) or 's3' (any S3-compatible endpoint).
+  transport String @default("database")
+
+  // S3 connection settings. Each is null when transport='database'.
+  s3Endpoint       String?
+  s3ForcePathStyle Boolean @default(false)
+  s3Region         String?
+  s3Bucket         String?
+
+  // Encrypted at rest with NEXT_PRIVATE_ENCRYPTION_KEY.
+  s3AccessKeyId     String?
+  s3SecretAccessKey String?
+
+  // Optional CDN distribution (CloudFront-style signed URLs).
+  s3DistributionDomain   String?
+  s3DistributionKeyId    String?
+  s3DistributionKeyPem   String?
+
+  updatedAt       DateTime @updatedAt
+  updatedByUserId Int?
+}
+
 // BIZRETHINK_ADDITIONS_END

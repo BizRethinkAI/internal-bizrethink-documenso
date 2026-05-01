@@ -4,6 +4,7 @@ import {
   AlertTriangleIcon,
   BarChart3,
   Building2Icon,
+  DatabaseIcon,
   FileStack,
   KeyRoundIcon,
   MailIcon,
@@ -199,6 +200,21 @@ export default function AdminLayout({ loaderData }: Route.ComponentProps) {
             <Link to="/admin/signing">
               <KeyRoundIcon className="mr-2 h-5 w-5" />
               <Trans>Signing Config</Trans>
+            </Link>
+          </Button>
+
+          {/* Phase E (overlay 013): instance storage config admin UI. */}
+          <Button
+            variant="ghost"
+            className={cn(
+              'justify-start md:w-full',
+              pathname?.startsWith('/admin/storage') && 'bg-secondary',
+            )}
+            asChild
+          >
+            <Link to="/admin/storage">
+              <DatabaseIcon className="mr-2 h-5 w-5" />
+              <Trans>Storage</Trans>
             </Link>
           </Button>
         </div>

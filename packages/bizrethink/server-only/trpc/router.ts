@@ -1,6 +1,7 @@
 import { router } from '@documenso/trpc/server/trpc';
 
 import { instanceSigningRouter } from './instance-signing-router';
+import { instanceStorageRouter } from './instance-storage-router';
 import { orgSmtpRouter } from './org-smtp-router';
 
 // Top-level BizRethink TRPC router. Wired into the main `appRouter` via
@@ -16,4 +17,5 @@ import { orgSmtpRouter } from './org-smtp-router';
 export const bizrethinkRouter = router({
   organisationSmtp: orgSmtpRouter,
   instanceSigning: instanceSigningRouter,
+  instanceStorage: instanceStorageRouter,
 });

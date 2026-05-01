@@ -76,11 +76,19 @@ export const putNormalizedPdfFileServerSide = async (
 
 /**
  * Uploads a file to the appropriate storage location.
+ *
+ * MODIFIED for BizRethink (overlay 013): transport selection consults the
+ * BizrethinkInstanceStorageConfig singleton row before falling back to env.
  */
 export const putFileServerSide = async (file: File) => {
-  const NEXT_PUBLIC_UPLOAD_TRANSPORT = env('NEXT_PUBLIC_UPLOAD_TRANSPORT');
+  const { getInstanceStorageConfig } = await import(
+    '@bizrethink/customizations/server-only/instance-storage-config'
+  );
+  const dbConfig = await getInstanceStorageConfig();
 
-  return await match(NEXT_PUBLIC_UPLOAD_TRANSPORT)
+  const transport = dbConfig?.transport ?? env('NEXT_PUBLIC_UPLOAD_TRANSPORT');
+
+  return await match(transport)
     .with('s3', async () => putFileInS3(file))
     .otherwise(async () => putFileInDatabase(file));
 };
