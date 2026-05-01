@@ -108,65 +108,36 @@ const getTransport = (): Transporter => {
   });
 };
 
-// MODIFIED for BizRethink (overlay 010): per-org SMTP via AsyncLocalStorage.
+// MODIFIED for BizRethink (overlay 010 v2): per-org SMTP via explicit orgId
+// argument. The original ALS-Proxy approach (overlay 010 v1, 2026-04-30)
+// failed because `enterWith` doesn't propagate UP the async stack — when
+// getEmailContext called enterWith and returned, the awaiting handler's
+// continuation ran in its own async-context tree and saw an empty store.
+// Live diagnostic logs at 2026-05-01 02:04 UTC confirmed: storeAfter inside
+// getEmailContext was set, but pre-runTask in the handler was undefined
+// despite the singleton verification (alsId 'mxggrn', hasGlobal: true).
 //
-// The original `export const mailer = getTransport()` is replaced with a
-// Proxy that intercepts `.sendMail` calls. At send time the Proxy reads
-// `orgContextStorage` (set by getEmailContext for any org-scoped flow) and
-// dispatches to the right transporter — per-org via getMailerForOrg, or
-// env-default otherwise.
-//
-// Dynamic imports break what would otherwise be a circular dependency
-// between @documenso/email and @bizrethink/customizations (per-org-mailer
-// imports `mailer` from this file). Both bizrethink modules are loaded by
-// the time the first sendMail call happens so the dynamic imports always
-// hit the require cache.
+// New design: `mailer` is an eager env-default singleton (unchanged from
+// upstream). Callers that want per-org routing import `getMailer(orgId)`
+// instead, which returns the org-specific transporter or falls back. This
+// is bulletproof against future merges adding new mailer.sendMail call
+// sites — TS will compile fine without orgId, just dispatching to env-default.
 
-const envDefaultMailer = getTransport();
+export const mailer: Transporter = getTransport();
 
-export const mailer = new Proxy(envDefaultMailer, {
-  get(target, prop, receiver) {
-    if (prop === 'sendMail') {
-      return async (opts: Parameters<typeof envDefaultMailer.sendMail>[0]) => {
-        const { orgContextStorage } = await import(
-          '@bizrethink/customizations/server-only/org-context'
-        );
-        const ctx = orgContextStorage.getStore();
-
-        // DEBUG (Phase B Diagnostic — strip after bisection): trace ALS
-        // read + payload shape at sendMail time. The alsId lets us match
-        // this Proxy invocation to the getEmailContext.enterWith log via
-        // instance identity. htmlLen/textLen confirm the Proxy isn't
-        // stripping payload fields (Bug B-2).
-        // eslint-disable-next-line no-console
-        console.log('[bizrethink][debug] mailer.sendMail proxy', {
-          ctxOrgId: ctx?.orgId,
-          ctxIsSet: !!ctx,
-          dispatch: ctx?.orgId ? 'per-org' : 'env-default',
-          alsId: (orgContextStorage as unknown as { __id?: string }).__id,
-          htmlLen: opts.html?.toString().length ?? 0,
-          textLen: opts.text?.toString().length ?? 0,
-          subjectHead: opts.subject?.slice(0, 40),
-          fromAddr:
-            typeof opts.from === 'string'
-              ? opts.from
-              : Array.isArray(opts.from)
-                ? '<array>'
-                : opts.from?.address,
-          pid: process.pid,
-        });
-
-        if (ctx?.orgId) {
-          const { getMailerForOrg } = await import(
-            '@bizrethink/customizations/server-only/per-org-mailer'
-          );
-          const transporter = await getMailerForOrg(ctx.orgId);
-          return transporter.sendMail(opts);
-        }
-
-        return target.sendMail(opts);
-      };
-    }
-    return Reflect.get(target, prop, receiver);
-  },
-}) as Transporter;
+/**
+ * Resolve the right transporter for an organisation. Falls back to the
+ * env-default mailer if no per-org SMTP row exists for this orgId, or if
+ * orgId is undefined/null.
+ *
+ * Use at every mailer.sendMail call site that has access to an orgId.
+ * Other call sites (auth, team-internal) keep using `mailer` directly —
+ * those flows are BizRethink-attributed by design.
+ */
+export const getMailer = async (orgId?: string | null): Promise<Transporter> => {
+  if (!orgId) {
+    return mailer;
+  }
+  const { getMailerForOrg } = await import('@bizrethink/customizations/server-only/per-org-mailer');
+  return getMailerForOrg(orgId);
+};

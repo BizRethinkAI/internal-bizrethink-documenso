@@ -2,7 +2,7 @@ import { createElement } from 'react';
 
 import { msg } from '@lingui/core/macro';
 
-import { mailer } from '@documenso/email/mailer';
+import { getMailer } from '@documenso/email/mailer';
 import { DocumentCreatedFromDirectTemplateEmailTemplate } from '@documenso/email/templates/document-created-from-direct-template';
 import { prisma } from '@documenso/prisma';
 
@@ -57,7 +57,7 @@ export const run = async ({
   const [recipient] = envelope.recipients;
   const { user: templateOwner } = envelope;
 
-  const { branding, emailLanguage, senderEmail } = await getEmailContext({
+  const { branding, emailLanguage, senderEmail, organisationId } = await getEmailContext({
     emailType: 'INTERNAL',
     source: {
       type: 'team',
@@ -85,7 +85,9 @@ export const run = async ({
     renderEmailWithI18N(emailTemplate, { lang: emailLanguage, branding, plainText: true }),
   ]);
 
-  await mailer.sendMail({
+  const orgMailer = await getMailer(organisationId);
+
+  await orgMailer.sendMail({
     to: [
       {
         name: templateOwner.name || '',

@@ -11,7 +11,7 @@ import {
   WebhookTriggerEvents,
 } from '@prisma/client';
 
-import { mailer } from '@documenso/email/mailer';
+import { getMailer } from '@documenso/email/mailer';
 import DocumentReminderEmailTemplate from '@documenso/email/templates/document-reminder';
 import { prisma } from '@documenso/prisma';
 
@@ -111,7 +111,7 @@ export const run = async ({
     return;
   }
 
-  const { branding, emailLanguage, organisationType, senderEmail, replyToEmail } =
+  const { branding, emailLanguage, organisationType, senderEmail, replyToEmail, organisationId } =
     await getEmailContext({
       emailType: 'RECIPIENT',
       source: {
@@ -179,7 +179,9 @@ export const run = async ({
     }),
   ]);
 
-  await mailer.sendMail({
+  const orgMailer = await getMailer(organisationId);
+
+  await orgMailer.sendMail({
     to: {
       name: recipient.name,
       address: recipient.email,

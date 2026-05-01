@@ -3,7 +3,7 @@ import { createElement } from 'react';
 import { msg } from '@lingui/core/macro';
 import { EnvelopeType, SendStatus, SigningStatus } from '@prisma/client';
 
-import { mailer } from '@documenso/email/mailer';
+import { getMailer } from '@documenso/email/mailer';
 import DocumentRejectedEmail from '@documenso/email/templates/document-rejected';
 import DocumentRejectionConfirmedEmail from '@documenso/email/templates/document-rejection-confirmed';
 import { isRecipientEmailValidForSending } from '@documenso/lib/utils/recipients';
@@ -74,14 +74,15 @@ export const run = async ({
     return;
   }
 
-  const { branding, emailLanguage, senderEmail, replyToEmail } = await getEmailContext({
-    emailType: 'RECIPIENT',
-    source: {
-      type: 'team',
-      teamId: envelope.teamId,
-    },
-    meta: envelope.documentMeta,
-  });
+  const { branding, emailLanguage, senderEmail, replyToEmail, organisationId } =
+    await getEmailContext({
+      emailType: 'RECIPIENT',
+      source: {
+        type: 'team',
+        teamId: envelope.teamId,
+      },
+      meta: envelope.documentMeta,
+    });
 
   const i18n = await getI18nInstance(emailLanguage);
 
@@ -105,7 +106,9 @@ export const run = async ({
         }),
       ]);
 
-      await mailer.sendMail({
+      const orgMailer = await getMailer(organisationId);
+
+      await orgMailer.sendMail({
         to: {
           name: recipient.name,
           address: recipient.email,
@@ -140,7 +143,9 @@ export const run = async ({
       }),
     ]);
 
-    await mailer.sendMail({
+    const ownerMailer = await getMailer(organisationId);
+
+    await ownerMailer.sendMail({
       to: {
         name: documentOwner.name || '',
         address: documentOwner.email,

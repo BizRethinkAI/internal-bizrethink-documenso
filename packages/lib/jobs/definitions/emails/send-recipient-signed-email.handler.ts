@@ -3,7 +3,7 @@ import { createElement } from 'react';
 import { msg } from '@lingui/core/macro';
 import { EnvelopeType } from '@prisma/client';
 
-import { mailer } from '@documenso/email/mailer';
+import { getMailer } from '@documenso/email/mailer';
 import { DocumentRecipientSignedEmailTemplate } from '@documenso/email/templates/document-recipient-signed';
 import { prisma } from '@documenso/prisma';
 
@@ -85,7 +85,7 @@ export const run = async ({
     return;
   }
 
-  const { branding, emailLanguage, senderEmail } = await getEmailContext({
+  const { branding, emailLanguage, senderEmail, organisationId } = await getEmailContext({
     emailType: 'INTERNAL',
     source: {
       type: 'team',
@@ -115,7 +115,9 @@ export const run = async ({
       }),
     ]);
 
-    await mailer.sendMail({
+    const orgMailer = await getMailer(organisationId);
+
+    await orgMailer.sendMail({
       to: {
         name: owner.name ?? '',
         address: owner.email,

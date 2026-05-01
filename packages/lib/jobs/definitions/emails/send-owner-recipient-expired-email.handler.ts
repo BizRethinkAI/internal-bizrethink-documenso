@@ -2,7 +2,7 @@ import { createElement } from 'react';
 
 import { msg } from '@lingui/core/macro';
 
-import { mailer } from '@documenso/email/mailer';
+import { getMailer } from '@documenso/email/mailer';
 import { RecipientExpiredTemplate } from '@documenso/email/templates/recipient-expired';
 import { prisma } from '@documenso/prisma';
 
@@ -70,7 +70,7 @@ export const run = async ({
     return;
   }
 
-  const { branding, emailLanguage, senderEmail } = await getEmailContext({
+  const { branding, emailLanguage, senderEmail, organisationId } = await getEmailContext({
     emailType: 'RECIPIENT',
     source: {
       type: 'team',
@@ -101,7 +101,9 @@ export const run = async ({
       }),
     ]);
 
-    await mailer.sendMail({
+    const orgMailer = await getMailer(organisationId);
+
+    await orgMailer.sendMail({
       to: {
         name: documentOwner.name || '',
         address: documentOwner.email,

@@ -78,6 +78,11 @@ type EmailContextResponse = {
   };
   replyToEmail: string | undefined;
   emailLanguage: string;
+  // ADDED for BizRethink (overlay 010 v2): exposed so callers can pass it to
+  // getMailer(orgId) for per-org SMTP routing. The original v1 design tried
+  // to hide this in AsyncLocalStorage but enterWith doesn't propagate UP
+  // the async stack — see mailer.ts comment.
+  organisationId: string | undefined;
 };
 
 export const getEmailContext = async (
@@ -85,7 +90,10 @@ export const getEmailContext = async (
 ): Promise<EmailContextResponse> => {
   const { source, meta } = options;
 
-  let emailContext: Omit<EmailContextResponse, 'senderEmail' | 'replyToEmail' | 'emailLanguage'>;
+  let emailContext: Omit<
+    EmailContextResponse,
+    'senderEmail' | 'replyToEmail' | 'emailLanguage' | 'organisationId'
+  >;
   let resolvedOrgId: string | undefined;
 
   if (source.type === 'organisation') {
@@ -97,28 +105,10 @@ export const getEmailContext = async (
     emailContext = teamResult;
   }
 
-  // MODIFIED for BizRethink (overlay 010): set the AsyncLocalStorage org
-  // context for the current async chain. The mailer Proxy in
-  // packages/email/mailer.ts reads this at sendMail time to dispatch the
-  // org-specific transporter (or fall through to env-default if unset).
-  // `enterWith` propagates through subsequent awaits without requiring an
-  // explicit `run` scope around the caller.
-  if (resolvedOrgId) {
-    const { orgContextStorage } = await import(
-      '@bizrethink/customizations/server-only/org-context'
-    );
-    orgContextStorage.enterWith({ orgId: resolvedOrgId });
-    // DEBUG (Phase B Diagnostic — strip after bisection): emit the tagged
-    // ALS instance id so we can correlate enterWith → mailer.sendMail proxy
-    // reads. If alsIds differ across log lines the singleton is broken.
-    // eslint-disable-next-line no-console
-    console.log('[bizrethink][debug] getEmailContext.enterWith', {
-      orgId: resolvedOrgId,
-      alsId: (orgContextStorage as unknown as { __id?: string }).__id,
-      storeAfter: orgContextStorage.getStore(),
-      pid: process.pid,
-    });
-  }
+  // ADDED for BizRethink (overlay 010 v2): the resolved org id is exposed
+  // in the response so callers can pass it to getMailer(orgId) for per-org
+  // SMTP routing. v1 used AsyncLocalStorage which didn't work — see
+  // mailer.ts comment.
 
   const emailLanguage = meta?.language || emailContext.settings.documentLanguage;
 
@@ -129,6 +119,7 @@ export const getEmailContext = async (
       senderEmail: DOCUMENSO_INTERNAL_EMAIL,
       replyToEmail: undefined,
       emailLanguage, // Not sure if we want to use this for internal emails.
+      organisationId: resolvedOrgId,
     };
   }
 
@@ -159,6 +150,7 @@ export const getEmailContext = async (
     senderEmail,
     replyToEmail,
     emailLanguage,
+    organisationId: resolvedOrgId,
   };
 };
 
