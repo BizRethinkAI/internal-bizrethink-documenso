@@ -15,7 +15,6 @@ import { getRecipientByToken } from '@documenso/lib/server-only/recipient/get-re
 import { getRecipientSignatures } from '@documenso/lib/server-only/recipient/get-recipient-signatures';
 import { getUserByEmail } from '@documenso/lib/server-only/user/get-user-by-email';
 import { isDocumentCompleted } from '@documenso/lib/utils/document';
-import { env } from '@documenso/lib/utils/env';
 import { trpc } from '@documenso/trpc/react';
 import { DocumentShareButton } from '@documenso/ui/components/document/document-share-button';
 import { SigningCard3D } from '@documenso/ui/components/signing-card';
@@ -80,7 +79,9 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     fields.find((field) => field.type === FieldType.NAME)?.customText ||
     recipient.email;
 
-  const canSignUp = !isExistingUser && env('NEXT_PUBLIC_DISABLE_SIGNUP') !== 'true';
+  // MODIFIED for BizRethink (overlay 012): use DB-aware isSignupDisabled().
+  const { isSignupDisabled } = await import('@bizrethink/customizations/server-only/signup-config');
+  const canSignUp = !isExistingUser && !(await isSignupDisabled());
 
   const canRedirectToFolder =
     user && document.userId === user.id && document.folderId && document.team?.url;

@@ -12,7 +12,6 @@ import {
   IS_OIDC_SSO_ENABLED,
   OIDC_PROVIDER_LABEL,
 } from '@documenso/lib/constants/auth';
-import { env } from '@documenso/lib/utils/env';
 import { isValidReturnTo, normalizeReturnTo } from '@documenso/lib/utils/is-valid-return-to';
 import { Alert, AlertDescription } from '@documenso/ui/primitives/alert';
 
@@ -35,6 +34,14 @@ export async function loader({ request }: Route.LoaderArgs) {
   const isOIDCSSOEnabled = IS_OIDC_SSO_ENABLED;
   const oidcProviderLabel = OIDC_PROVIDER_LABEL;
 
+  // MODIFIED for BizRethink (overlay 012): resolve signup-disabled in the
+  // loader so the JSX below can use a static prop instead of reading env at
+  // render time. The DB-backed setting takes precedence over env.
+  const { isSignupDisabled: getIsSignupDisabled } = await import(
+    '@bizrethink/customizations/server-only/signup-config'
+  );
+  const isSignupDisabled = await getIsSignupDisabled();
+
   let returnTo = new URL(request.url).searchParams.get('returnTo') ?? undefined;
 
   returnTo = isValidReturnTo(returnTo) ? normalizeReturnTo(returnTo) : undefined;
@@ -49,6 +56,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     isOIDCSSOEnabled,
     oidcProviderLabel,
     returnTo,
+    isSignupDisabled,
   };
 }
 
@@ -59,6 +67,7 @@ export default function SignIn({ loaderData }: Route.ComponentProps) {
     isOIDCSSOEnabled,
     oidcProviderLabel,
     returnTo,
+    isSignupDisabled,
   } = loaderData;
 
   const { _ } = useLingui();
@@ -103,7 +112,7 @@ export default function SignIn({ loaderData }: Route.ComponentProps) {
           returnTo={returnTo}
         />
 
-        {!isEmbeddedRedirect && env('NEXT_PUBLIC_DISABLE_SIGNUP') !== 'true' && (
+        {!isEmbeddedRedirect && !isSignupDisabled && (
           <p className="mt-6 text-center text-sm text-muted-foreground">
             <Trans>
               Don't have an account?{' '}

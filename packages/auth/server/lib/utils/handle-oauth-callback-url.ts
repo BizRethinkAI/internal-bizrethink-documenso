@@ -127,7 +127,8 @@ export const handleOAuthCallbackUrl = async (options: HandleOAuthCallbackUrlOpti
   }
 
   // Check domain restriction for new SSO users.
-  if (!isEmailDomainAllowedForSignup(email)) {
+  // MODIFIED for BizRethink (overlay 012): isEmailDomainAllowedForSignup is now async.
+  if (!(await isEmailDomainAllowedForSignup(email))) {
     const errorUrl = new URL('/signin', NEXT_PUBLIC_WEBAPP_URL());
 
     errorUrl.searchParams.set('error', AuthenticationErrorCode.SignupDisabled);

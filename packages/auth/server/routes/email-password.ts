@@ -213,7 +213,8 @@ export const emailPasswordRoute = new Hono<HonoAuthContext>()
       ipAddress: requestMetadata.ipAddress,
     });
 
-    if (!isEmailDomainAllowedForSignup(email)) {
+    // MODIFIED for BizRethink (overlay 012): isEmailDomainAllowedForSignup is now async.
+    if (!(await isEmailDomainAllowedForSignup(email))) {
       throw new AppError(AuthenticationErrorCode.SignupDisabled, {
         statusCode: 400,
       });

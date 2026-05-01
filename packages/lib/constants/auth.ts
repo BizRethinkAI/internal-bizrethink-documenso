@@ -71,28 +71,29 @@ export const getCookieDomain = () => {
 };
 
 /**
- * Get allowed signup domains from env var.
- * Returns empty array if not set (meaning all domains allowed).
+ * Get allowed signup domains. DB-backed `site.signup.allowedDomains` takes
+ * precedence; `NEXT_PRIVATE_ALLOWED_SIGNUP_DOMAINS` (CSV) is the fallback.
+ *
+ * MODIFIED for BizRethink (overlay 012): converted from sync to async so
+ * the admin UI can update the list without redeploy. The DB lookup is
+ * dynamic-imported to break the circular dep between constants and
+ * @bizrethink/customizations.
  */
-export const getAllowedSignupDomains = (): string[] => {
-  const domains = env('NEXT_PRIVATE_ALLOWED_SIGNUP_DOMAINS');
-
-  if (!domains) {
-    return [];
-  }
-
-  return domains
-    .split(',')
-    .map((d) => d.trim().toLowerCase())
-    .filter(Boolean);
+export const getAllowedSignupDomains = async (): Promise<string[]> => {
+  const { getAllowedSignupDomains: dbGetter } = await import(
+    '@bizrethink/customizations/server-only/signup-config'
+  );
+  return (await dbGetter()).map((d) => d.toLowerCase());
 };
 
 /**
  * Check if email domain is allowed for signup.
  * Returns true if no domain restriction is configured.
+ *
+ * MODIFIED for BizRethink (overlay 012): now async to use the DB-aware getter.
  */
-export const isEmailDomainAllowedForSignup = (email: string): boolean => {
-  const allowedDomains = getAllowedSignupDomains();
+export const isEmailDomainAllowedForSignup = async (email: string): Promise<boolean> => {
+  const allowedDomains = await getAllowedSignupDomains();
 
   if (allowedDomains.length === 0) {
     return true;

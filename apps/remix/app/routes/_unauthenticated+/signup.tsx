@@ -1,3 +1,5 @@
+// MODIFIED for BizRethink (overlay 012): use DB-aware isSignupDisabled.
+import { isSignupDisabled } from '@bizrethink/customizations/server-only/signup-config';
 import { msg } from '@lingui/core/macro';
 import { redirect } from 'react-router';
 
@@ -6,7 +8,6 @@ import {
   IS_MICROSOFT_SSO_ENABLED,
   IS_OIDC_SSO_ENABLED,
 } from '@documenso/lib/constants/auth';
-import { env } from '@documenso/lib/utils/env';
 import { isValidReturnTo, normalizeReturnTo } from '@documenso/lib/utils/is-valid-return-to';
 
 import { SignUpForm } from '~/components/forms/signup';
@@ -18,15 +19,13 @@ export function meta() {
   return appMetaTags(msg`Sign Up`);
 }
 
-export function loader({ request }: Route.LoaderArgs) {
-  const NEXT_PUBLIC_DISABLE_SIGNUP = env('NEXT_PUBLIC_DISABLE_SIGNUP');
-
+export async function loader({ request }: Route.LoaderArgs) {
   // SSR env variables.
   const isGoogleSSOEnabled = IS_GOOGLE_SSO_ENABLED;
   const isMicrosoftSSOEnabled = IS_MICROSOFT_SSO_ENABLED;
   const isOIDCSSOEnabled = IS_OIDC_SSO_ENABLED;
 
-  if (NEXT_PUBLIC_DISABLE_SIGNUP === 'true') {
+  if (await isSignupDisabled()) {
     throw redirect('/signin');
   }
 

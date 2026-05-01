@@ -1,3 +1,8 @@
+// ADDED for BizRethink (overlay 012): signup section schema lives in our package.
+import {
+  SITE_SETTINGS_SIGNUP_ID,
+  ZSiteSettingsSignupSchema,
+} from '@bizrethink/customizations/server-only/site-settings/schemas/signup';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
@@ -35,16 +40,20 @@ const ZBannerFormSchema = ZSiteSettingsBannerSchema;
 
 type TBannerFormSchema = z.infer<typeof ZBannerFormSchema>;
 
-export async function loader() {
-  const banner = await getSiteSettings().then((settings) =>
-    settings.find((setting) => setting.id === SITE_SETTINGS_BANNER_ID),
-  );
+// ADDED for BizRethink (overlay 012): signup section uses the bizrethink schema.
+const ZSignupFormSchema = ZSiteSettingsSignupSchema;
+type TSignupFormSchema = z.infer<typeof ZSignupFormSchema>;
 
-  return { banner };
+export async function loader() {
+  const all = await getSiteSettings();
+  const banner = all.find((setting) => setting.id === SITE_SETTINGS_BANNER_ID);
+  const signup = all.find((setting) => setting.id === SITE_SETTINGS_SIGNUP_ID);
+
+  return { banner, signup };
 }
 
 export default function AdminBannerPage({ loaderData }: Route.ComponentProps) {
-  const { banner } = loaderData;
+  const { banner, signup } = loaderData;
 
   const { toast } = useToast();
   const { _ } = useLingui();
@@ -59,6 +68,19 @@ export default function AdminBannerPage({ loaderData }: Route.ComponentProps) {
         content: banner?.data?.content ?? '',
         bgColor: banner?.data?.bgColor ?? '#000000',
         textColor: banner?.data?.textColor ?? '#FFFFFF',
+      },
+    },
+  });
+
+  // ADDED for BizRethink (overlay 012): signup section form.
+  const signupForm = useForm<TSignupFormSchema>({
+    resolver: zodResolver(ZSignupFormSchema),
+    defaultValues: {
+      id: SITE_SETTINGS_SIGNUP_ID,
+      enabled: signup?.enabled ?? false,
+      data: {
+        signupDisabled: signup?.data?.signupDisabled ?? false,
+        allowedDomains: signup?.data?.allowedDomains ?? [],
       },
     },
   });
@@ -106,7 +128,7 @@ export default function AdminBannerPage({ loaderData }: Route.ComponentProps) {
           <h2 className="font-semibold">
             <Trans>Site Banner</Trans>
           </h2>
-          <p className="text-muted-foreground mt-2 text-sm">
+          <p className="mt-2 text-sm text-muted-foreground">
             <Trans>
               The site banner is a message that is shown at the top of the site. It can be used to
               display important information to your users.
@@ -214,6 +236,124 @@ export default function AdminBannerPage({ loaderData }: Route.ComponentProps) {
                 className="mt-4 justify-end self-end"
               >
                 <Trans>Update Banner</Trans>
+              </Button>
+            </form>
+          </Form>
+        </div>
+
+        {/* ADDED for BizRethink (overlay 012): signup gating section. */}
+        <div className="mt-12">
+          <h2 className="font-semibold">
+            <Trans>Signup gating</Trans>
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            <Trans>
+              Disable signup entirely or restrict it to a list of email domains. This DB-backed
+              setting overrides NEXT_PUBLIC_DISABLE_SIGNUP and NEXT_PRIVATE_ALLOWED_SIGNUP_DOMAINS.
+              "Enabled" must be on for the override to take effect.
+            </Trans>
+          </p>
+
+          <Form {...signupForm}>
+            <form
+              className="mt-4 flex flex-col gap-4 rounded-md"
+              onSubmit={signupForm.handleSubmit(async ({ id, enabled, data }) => {
+                try {
+                  await updateSiteSetting({ id, enabled, data });
+                  toast({
+                    title: _(msg`Signup gating saved`),
+                    description: _(
+                      msg`Signup config updated. New visitors will hit the new policy.`,
+                    ),
+                  });
+                  await revalidate();
+                } catch (err) {
+                  toast({
+                    title: _(msg`An unknown error occurred`),
+                    description:
+                      err instanceof Error ? err.message : _(msg`Please try again later.`),
+                    variant: 'destructive',
+                  });
+                }
+              })}
+            >
+              <FormField
+                control={signupForm.control}
+                name="enabled"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      <Trans>Enabled (override env)</Trans>
+                    </FormLabel>
+                    <FormControl>
+                      <div>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={signupForm.control}
+                name="data.signupDisabled"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      <Trans>Disable signup</Trans>
+                    </FormLabel>
+                    <FormControl>
+                      <div>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </div>
+                    </FormControl>
+                    <FormDescription>
+                      <Trans>
+                        When on, /signup redirects to /signin and the "Sign up" link disappears.
+                      </Trans>
+                    </FormDescription>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={signupForm.control}
+                name="data.allowedDomains"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      <Trans>Allowed signup domains (one per line)</Trans>
+                    </FormLabel>
+                    <FormControl>
+                      <Textarea
+                        className="h-24 font-mono text-xs"
+                        value={(field.value ?? []).join('\n')}
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value
+                              .split('\n')
+                              .map((d) => d.trim())
+                              .filter(Boolean),
+                          )
+                        }
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      <Trans>
+                        Empty list means all domains allowed. Only relevant when signup is enabled.
+                      </Trans>
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Button
+                type="submit"
+                loading={isUpdateSiteSettingLoading}
+                className="mt-4 justify-end self-end"
+              >
+                <Trans>Update signup gating</Trans>
               </Button>
             </form>
           </Form>
