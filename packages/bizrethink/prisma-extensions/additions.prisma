@@ -181,3 +181,27 @@ model BizrethinkSsoProvider {
   updatedAt       DateTime @updatedAt
   updatedByUserId Int?
 }
+
+// ─── Phase H (overlay 016) — Google Vertex AI config ──────────────────────
+//
+// Singleton row holding Google Vertex AI credentials. Replaces three env vars:
+// GOOGLE_VERTEX_PROJECT_ID / _LOCATION / _API_KEY. Used by AI-assisted
+// contract review (when wired upstream). aiFeaturesEnabled per-org/team is
+// upstream-managed; this row provides the instance-wide credentials AI
+// consumers will need.
+
+model BizrethinkInstanceAiConfig {
+  id String @id @default("singleton")
+
+  enabled Boolean @default(false)
+
+  // Plain text — project IDs are not sensitive.
+  vertexProjectId String?
+  vertexLocation  String?
+
+  // Encrypted at rest with NEXT_PRIVATE_ENCRYPTION_KEY.
+  vertexApiKey String?
+
+  updatedAt       DateTime @updatedAt
+  updatedByUserId Int?
+}

@@ -1,5 +1,6 @@
 import { router } from '@documenso/trpc/server/trpc';
 
+import { instanceAiRouter } from './instance-ai-router';
 import { instanceSigningRouter } from './instance-signing-router';
 import { instanceStorageRouter } from './instance-storage-router';
 import { orgSmtpRouter } from './org-smtp-router';
@@ -20,4 +21,5 @@ export const bizrethinkRouter = router({
   instanceSigning: instanceSigningRouter,
   instanceStorage: instanceStorageRouter,
   ssoProvider: ssoProviderRouter,
+  instanceAi: instanceAiRouter,
 });

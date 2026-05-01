@@ -10,6 +10,7 @@ import {
   LogInIcon,
   MailIcon,
   Settings,
+  SparklesIcon,
   Trophy,
   Users,
   Wallet2,
@@ -231,6 +232,21 @@ export default function AdminLayout({ loaderData }: Route.ComponentProps) {
             <Link to="/admin/sso-providers">
               <LogInIcon className="mr-2 h-5 w-5" />
               <Trans>SSO Providers</Trans>
+            </Link>
+          </Button>
+
+          {/* Phase H (overlay 016): Vertex AI admin UI. */}
+          <Button
+            variant="ghost"
+            className={cn(
+              'justify-start md:w-full',
+              pathname?.startsWith('/admin/ai') && 'bg-secondary',
+            )}
+            asChild
+          >
+            <Link to="/admin/ai">
+              <SparklesIcon className="mr-2 h-5 w-5" />
+              <Trans>AI Config</Trans>
             </Link>
           </Button>
         </div>
