@@ -1,0 +1,79 @@
+# Why: When `/template/use` creates a document from a template that has AcroForm
+#      widgets baked into its PDF (the BizRethink AcroForm-pivot pipeline —
+#      Cowork's apply_acroform_to_docx.py + inject_acroform_widgets.py output —
+#      used for ISO PRA / Subscription / FRPA / Maverick), Documenso's
+#      `createDocumentFromTemplate` calls `putNormalizedPdfFileServerSide` with
+#      no options, which defaults `flattenForm: true`. That triggers
+#      `normalizePdf → form.flatten()` on the document's AcroForm.
+#
+#      Verified bug: pdf-lib (`@libpdf/core`)'s `form.flatten()` mis-renders
+#      multi-page multi-instance AcroForm widgets. Only the LAST content page's
+#      widgets render with the correct values; widgets on earlier pages receive
+#      jumbled values from other widgets (and the rendering also leaves stale
+#      `<F:NAME>` marker text and underscore decorations in the flattened text
+#      stream).
+#
+#      Diagnosed against ISO PRA (template id=8, document id=16) — sealed PDF
+#      page 2 had: effective_date widget rendered "TestPartner..." instead of
+#      "2026-05-02"; iso_partner_company widget rendered "Shwet" instead of
+#      "TestPartner ISO LLC"; commission_percentage widget rendered "Founder"
+#      instead of "8". Page 5 sig block rendered all values correctly.
+#
+#      Single-page contracts (Payzli) are unaffected because all widgets land
+#      on the only content page = the "last" page = the one pdf-lib renders
+#      correctly. Bug is multi-page-only.
+#
+#      Fix: disable AcroForm flatten on document creation. AcroForm widgets
+#      stay alive in the document with `/V` populated by `insertFormValuesInPdf`
+#      (the immediately preceding step). PDF readers (and Documenso's Konva-
+#      based signing-page renderer) display the filled values directly from
+#      `/V` + `/DA` + `/DR/Font/HelvB` — same visible result, without going
+#      through pdf-lib's broken flatten path. The cryptographic seal applied at
+#      sign-completion (`packages/signing/index.ts:getSigner()` + the document
+#      certificate) locks the document; AcroForm `/V` becomes immutable post-
+#      seal because the seal-byte-range covers the full PDF including form
+#      objects, exactly as intended for filled-then-signed documents.
+#
+#      Fragility: LOW-MED. The function `putNormalizedPdfFileServerSide`
+#      already accepts an optional `{ flattenForm?: boolean }` second arg, so
+#      we're using its public API. The only fragility is if upstream changes
+#      the call signature or removes the option — caught at typecheck time
+#      during the weekly upstream-sync.
+#
+#      Long-term: file an upstream issue + PR against pdf-lib (libpdf) to fix
+#      the multi-page multi-instance flatten render bug. Until then, this
+#      overlay is the cheapest reliable workaround.
+#
+diff --git a/packages/lib/server-only/template/create-document-from-template.ts b/packages/lib/server-only/template/create-document-from-template.ts
+index f65b790c7..fff6d18fc 100644
+--- a/packages/lib/server-only/template/create-document-from-template.ts
++++ b/packages/lib/server-only/template/create-document-from-template.ts
+@@ -490,11 +490,23 @@ export const createDocumentFromTemplate = async ({
+         });
+       }
+
+-      const duplicatedFile = await putNormalizedPdfFileServerSide({
+-        name: titleToUse,
+-        type: 'application/pdf',
+-        arrayBuffer: async () => Promise.resolve(buffer),
+-      });
++      const duplicatedFile = await putNormalizedPdfFileServerSide(
++        {
++          name: titleToUse,
++          type: 'application/pdf',
++          arrayBuffer: async () => Promise.resolve(buffer),
++        },
++        // BizRethink overlay 018: skip AcroForm flatten on document creation.
++        // pdf-lib's form.flatten() mis-renders multi-page multi-instance
++        // AcroForm widgets — values land on the wrong widgets except on the
++        // last content page (verified visually on ISO PRA template id=8,
++        // document id=16: page 2 widgets received jumbled values while
++        // page 5 sig block rendered correctly). Disabling flatten preserves
++        // AcroForm widgets in the document; PDF readers render them from
++        // /V + /DA + /DR/HelvB cleanly. The cryptographic seal at sign-
++        // completion time locks the document so /V can't be modified after.
++        { flattenForm: false },
++      );
+
+       const newDocumentData = await prisma.documentData.create({
+         data: {

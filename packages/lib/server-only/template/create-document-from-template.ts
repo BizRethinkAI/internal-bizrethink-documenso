@@ -490,11 +490,23 @@ export const createDocumentFromTemplate = async ({
         });
       }
 
-      const duplicatedFile = await putNormalizedPdfFileServerSide({
-        name: titleToUse,
-        type: 'application/pdf',
-        arrayBuffer: async () => Promise.resolve(buffer),
-      });
+      const duplicatedFile = await putNormalizedPdfFileServerSide(
+        {
+          name: titleToUse,
+          type: 'application/pdf',
+          arrayBuffer: async () => Promise.resolve(buffer),
+        },
+        // BizRethink overlay 018: skip AcroForm flatten on document creation.
+        // pdf-lib's form.flatten() mis-renders multi-page multi-instance
+        // AcroForm widgets — values land on the wrong widgets except on the
+        // last content page (verified visually on ISO PRA template id=8,
+        // document id=16: page 2 widgets received jumbled values while
+        // page 5 sig block rendered correctly). Disabling flatten preserves
+        // AcroForm widgets in the document; PDF readers render them from
+        // /V + /DA + /DR/HelvB cleanly. The cryptographic seal at sign-
+        // completion time locks the document so /V can't be modified after.
+        { flattenForm: false },
+      );
 
       const newDocumentData = await prisma.documentData.create({
         data: {
