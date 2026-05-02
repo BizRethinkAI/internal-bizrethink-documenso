@@ -13,6 +13,18 @@
 #      `<F:NAME>` marker text and underscore decorations in the flattened text
 #      stream).
 #
+#      Two flatten sites must be patched (both call `putNormalizedPdfFileServerSide`
+#      with no options, defaulting to flattenForm: true):
+#        1. `packages/lib/server-only/template/create-document-from-template.ts:493`
+#           — at /template/use time, when duplicating the template's PDF for the
+#           new document.
+#        2. `packages/lib/server-only/document/send-document.ts:355`
+#           — at distribute time, in `injectFormValuesIntoDocument`, called from
+#           `sendDocument` whenever envelope.formValues exists. This is the
+#           SECOND flatten — the document gets re-filled and re-normalized at
+#           every send. Initially missed; verified live: even with site (1)
+#           patched, document 17 came out flattened because (2) re-flattened.
+#
 #      Diagnosed against ISO PRA (template id=8, document id=16) — sealed PDF
 #      page 2 had: effective_date widget rendered "TestPartner..." instead of
 #      "2026-05-02"; iso_partner_company widget rendered "Shwet" instead of
@@ -77,3 +89,32 @@ index f65b790c7..fff6d18fc 100644
 
        const newDocumentData = await prisma.documentData.create({
          data: {
+diff --git a/packages/lib/server-only/document/send-document.ts b/packages/lib/server-only/document/send-document.ts
+index e1e10dd80..2243f05d7 100644
+--- a/packages/lib/server-only/document/send-document.ts
++++ b/packages/lib/server-only/document/send-document.ts
+@@ -352,11 +352,22 @@ const injectFormValuesIntoDocument = async (
+     fileName = `${envelope.title}.pdf`;
+   }
+
+-  const newDocumentData = await putNormalizedPdfFileServerSide({
+-    name: fileName,
+-    type: 'application/pdf',
+-    arrayBuffer: async () => Promise.resolve(prefilled),
+-  });
++  const newDocumentData = await putNormalizedPdfFileServerSide(
++    {
++      name: fileName,
++      type: 'application/pdf',
++      arrayBuffer: async () => Promise.resolve(prefilled),
++    },
++    // BizRethink overlay 018 (extended): skip AcroForm flatten on
++    // distribute-time re-fill. This is the SECOND flatten site —
++    // injectFormValuesIntoDocument runs whenever envelope.formValues exists
++    // (called from sendDocument:130-136), independently of the first flatten
++    // at document creation. Without this, the document gets flattened at
++    // distribute time even if create-time flatten was disabled. Same
++    // rationale as the create-time skip: pdf-lib's form.flatten() mis-
++    // renders multi-page multi-instance AcroForm widgets.
++    { flattenForm: false },
++  );

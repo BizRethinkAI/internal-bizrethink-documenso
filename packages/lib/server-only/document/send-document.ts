@@ -352,11 +352,22 @@ const injectFormValuesIntoDocument = async (
     fileName = `${envelope.title}.pdf`;
   }
 
-  const newDocumentData = await putNormalizedPdfFileServerSide({
-    name: fileName,
-    type: 'application/pdf',
-    arrayBuffer: async () => Promise.resolve(prefilled),
-  });
+  const newDocumentData = await putNormalizedPdfFileServerSide(
+    {
+      name: fileName,
+      type: 'application/pdf',
+      arrayBuffer: async () => Promise.resolve(prefilled),
+    },
+    // BizRethink overlay 018 (extended): skip AcroForm flatten on
+    // distribute-time re-fill. This is the SECOND flatten site —
+    // injectFormValuesIntoDocument runs whenever envelope.formValues exists
+    // (called from sendDocument:130-136), independently of the first flatten
+    // at document creation. Without this, the document gets flattened at
+    // distribute time even if create-time flatten was disabled. Same
+    // rationale as the create-time skip: pdf-lib's form.flatten() mis-
+    // renders multi-page multi-instance AcroForm widgets.
+    { flattenForm: false },
+  );
 
   await prisma.envelopeItem.update({
     where: {
