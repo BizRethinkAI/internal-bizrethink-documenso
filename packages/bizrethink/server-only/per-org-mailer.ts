@@ -1,4 +1,4 @@
-import { bytesToUtf8 } from '@noble/ciphers/utils';
+import { bytesToUtf8 } from '@noble/ciphers/utils.js';
 import type { Transporter } from 'nodemailer';
 import { createTransport } from 'nodemailer';
 
