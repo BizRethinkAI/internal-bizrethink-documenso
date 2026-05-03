@@ -46,8 +46,7 @@ export const createEmbeddingPresignTokenRoute = procedure
 
         if (!organisationClaim.flags.embedAuthoring) {
           throw new AppError(AppErrorCode.UNAUTHORIZED, {
-            message:
-              'Embedded Authoring is not included in your current plan. Please contact support.',
+            message: 'You do not have permission to create embedding presign tokens',
           });
         }
       }

@@ -20,7 +20,7 @@ export default async function handleRequest(
   responseStatusCode: number,
   responseHeaders: Headers,
   routerContext: EntryContext,
-  loadContext: AppLoadContext,
+  _loadContext: AppLoadContext,
 ) {
   let language = await langCookie.parse(request.headers.get('cookie') ?? '');
 
@@ -29,12 +29,6 @@ export default async function handleRequest(
   }
 
   await dynamicActivate(language);
-
-  // Threaded into ServerRouter so React Router applies the nonce to the
-  // scripts it injects (route manifest, hydration data, module preloads).
-  // The same nonce is also exposed to the React tree via the root loader so
-  // our own inline scripts/styles can carry it.
-  const nonce = loadContext.nonce || undefined;
 
   return new Promise((resolve, reject) => {
     let shellRendered = false;
@@ -47,10 +41,9 @@ export default async function handleRequest(
 
     const { pipe, abort } = renderToPipeableStream(
       <I18nProvider i18n={i18n}>
-        <ServerRouter context={routerContext} url={request.url} nonce={nonce} />
+        <ServerRouter context={routerContext} url={request.url} />
       </I18nProvider>,
       {
-        nonce,
         [readyOption]() {
           shellRendered = true;
           const body = new PassThrough();

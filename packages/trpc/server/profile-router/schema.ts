@@ -1,7 +1,5 @@
 import { z } from 'zod';
 
-import { ZNameSchema } from '@documenso/lib/constants/auth';
-
 export const ZFindUserSecurityAuditLogsSchema = z.object({
   page: z.number().optional(),
   perPage: z.number().optional(),
@@ -10,7 +8,7 @@ export const ZFindUserSecurityAuditLogsSchema = z.object({
 export type TFindUserSecurityAuditLogsSchema = z.infer<typeof ZFindUserSecurityAuditLogsSchema>;
 
 export const ZUpdateProfileMutationSchema = z.object({
-  name: ZNameSchema,
+  name: z.string().min(1),
   signature: z.string(),
 });
 

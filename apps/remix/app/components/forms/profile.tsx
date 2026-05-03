@@ -6,7 +6,6 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { useSession } from '@documenso/lib/client-only/providers/session';
-import { ZNameSchema } from '@documenso/lib/constants/auth';
 import { trpc } from '@documenso/trpc/react';
 import { cn } from '@documenso/ui/lib/utils';
 import { Button } from '@documenso/ui/primitives/button';
@@ -24,7 +23,10 @@ import { SignaturePadDialog } from '@documenso/ui/primitives/signature-pad/signa
 import { useToast } from '@documenso/ui/primitives/use-toast';
 
 export const ZProfileFormSchema = z.object({
-  name: ZNameSchema,
+  name: z
+    .string()
+    .trim()
+    .min(1, { message: msg`Please enter a valid name.`.id }),
   signature: z.string().min(1, { message: msg`Signature Pad cannot be empty.`.id }),
 });
 

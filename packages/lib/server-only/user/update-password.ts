@@ -54,12 +54,6 @@ export const updatePassword = async ({
       },
     });
 
-    await tx.passwordResetToken.deleteMany({
-      where: {
-        userId,
-      },
-    });
-
     return await tx.user.update({
       where: {
         id: userId,

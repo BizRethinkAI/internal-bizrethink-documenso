@@ -25,16 +25,11 @@ export const EnvelopeGenericPageRenderer = ({ pageData }: { pageData: PageRender
     envelopeStatus,
     currentEnvelopeItem,
     fields,
-    signatures,
     recipients,
     getRecipientColorKey,
     setRenderError,
     overrideSettings,
   } = useCurrentEnvelopeRender();
-
-  const signaturesByFieldId = useMemo(() => {
-    return new Map(signatures.map((signature) => [signature.fieldId, signature]));
-  }, [signatures]);
 
   const { stage, pageLayer, konvaContainer, unscaledViewport } = usePageRenderer(
     ({ stage, pageLayer }) => {
@@ -85,16 +80,6 @@ export const EnvelopeGenericPageRenderer = ({ pageData }: { pageData: PageRender
 
     const fieldTranslations = getClientSideFieldTranslations(i18n);
 
-    // Look up an inserted signature for this field. If we don't have one (e.g.
-    // the signatures haven't been loaded, or the field hasn't been signed yet)
-    // fall back to a placeholder so the field still renders something.
-    const insertedSignature = signaturesByFieldId.get(field.id);
-
-    const signature = insertedSignature ?? {
-      signatureImageAsBase64: '',
-      typedSignature: fieldTranslations.SIGNATURE,
-    };
-
     renderField({
       scale,
       pageLayer: pageLayer.current,
@@ -106,7 +91,10 @@ export const EnvelopeGenericPageRenderer = ({ pageData }: { pageData: PageRender
         positionX: Number(field.positionX),
         positionY: Number(field.positionY),
         fieldMeta: field.fieldMeta,
-        signature,
+        signature: {
+          signatureImageAsBase64: '',
+          typedSignature: fieldTranslations.SIGNATURE,
+        },
       },
       translations: fieldTranslations,
       pageWidth: unscaledViewport.width,
@@ -162,7 +150,7 @@ export const EnvelopeGenericPageRenderer = ({ pageData }: { pageData: PageRender
     });
 
     pageLayer.current.batchDraw();
-  }, [localPageFields, signaturesByFieldId]);
+  }, [localPageFields]);
 
   if (!currentEnvelopeItem) {
     return null;

@@ -78,7 +78,6 @@ export const signFieldWithToken = async ({
               signingOrder: {
                 gte: recipient.signingOrder ?? 0,
               },
-              envelopeId: recipient.envelopeId,
             }),
       },
     },

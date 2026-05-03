@@ -248,18 +248,20 @@ export default function TemplatePage({ params }: Route.ComponentProps) {
                   <Trans>Template</Trans>
                 </h3>
 
-                <div>
-                  <TemplatesTableActionDropdown
-                    row={{
-                      ...envelope,
-                      id: mapSecondaryIdToTemplateId(envelope.secondaryId),
-                      envelopeId: envelope.id,
-                    }}
-                    teamId={team?.id}
-                    templateRootPath={templateRootPath}
-                    onDelete={async () => navigate(templateRootPath)}
-                  />
-                </div>
+                {isOwnTeamTemplate && (
+                  <div>
+                    <TemplatesTableActionDropdown
+                      row={{
+                        ...envelope,
+                        id: mapSecondaryIdToTemplateId(envelope.secondaryId),
+                        envelopeId: envelope.id,
+                      }}
+                      teamId={team?.id}
+                      templateRootPath={templateRootPath}
+                      onDelete={async () => navigate(templateRootPath)}
+                    />
+                  </div>
+                )}
               </div>
 
               <p className="mt-2 px-4 text-sm text-muted-foreground">

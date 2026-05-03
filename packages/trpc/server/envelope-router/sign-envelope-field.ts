@@ -51,7 +51,6 @@ export const signEnvelopeFieldRoute = procedure
                 signingOrder: {
                   gte: recipient.signingOrder ?? 0,
                 },
-                envelopeId: recipient.envelopeId,
               }
             : {
                 id: recipient.id,

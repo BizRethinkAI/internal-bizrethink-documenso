@@ -35,7 +35,6 @@ export const getFieldsForToken = async ({ token }: GetFieldsForTokenOptions) => 
               signingOrder: {
                 gte: recipient.signingOrder ?? 0,
               },
-              envelopeId: recipient.envelopeId,
             },
             envelope: {
               id: recipient.envelopeId,

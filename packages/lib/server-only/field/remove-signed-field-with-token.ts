@@ -38,7 +38,6 @@ export const removeSignedFieldWithToken = async ({
               signingStatus: {
                 not: SigningStatus.SIGNED,
               },
-              envelopeId: recipient.envelopeId,
             }),
       },
     },
