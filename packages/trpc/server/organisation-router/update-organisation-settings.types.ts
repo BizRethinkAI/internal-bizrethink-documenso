@@ -37,6 +37,14 @@ export const ZUpdateOrganisationSettingsRequestSchema = z.object({
     brandingUrl: z.string().optional(),
     brandingCompanyDetails: z.string().optional(),
 
+    // ADDED for BizRethink overlay 025: per-org hidePoweredBy toggle.
+    // Mutates OrganisationClaim.flags.hidePoweredBy for this org's claim
+    // (each org has its own claim row, so this is per-org). When true, the
+    // email footer suppresses the "Powered by Pacta" attribution. When false,
+    // attribution shows. Decoupled from brandingEnabled so tenants without
+    // their own logo can still hide attribution if desired.
+    hidePoweredBy: z.boolean().optional(),
+
     // Email related settings.
     emailId: z.string().nullish(),
     emailReplyTo: zEmail().nullish(),

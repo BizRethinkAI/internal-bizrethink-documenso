@@ -46,7 +46,8 @@ export default function OrganisationSettingsBrandingPage() {
 
   const onBrandingPreferencesFormSubmit = async (data: TBrandingPreferencesFormSchema) => {
     try {
-      const { brandingEnabled, brandingLogo, brandingUrl, brandingCompanyDetails } = data;
+      const { brandingEnabled, brandingLogo, brandingUrl, brandingCompanyDetails, hidePoweredBy } =
+        data;
 
       let uploadedBrandingLogo: string | undefined = undefined;
 
@@ -66,6 +67,10 @@ export default function OrganisationSettingsBrandingPage() {
           brandingLogo: uploadedBrandingLogo,
           brandingUrl,
           brandingCompanyDetails,
+          // BizRethink overlay 025: pass through the hidePoweredBy claim flag
+          // so the TRPC route can mutate OrganisationClaim.flags atomically
+          // alongside OrganisationGlobalSettings.
+          hidePoweredBy,
         },
       });
 
@@ -108,6 +113,14 @@ export default function OrganisationSettingsBrandingPage() {
           <BrandingPreferencesForm
             context="Organisation"
             settings={organisationWithSettings.organisationGlobalSettings}
+            // BizRethink overlay 025: pass through current hidePoweredBy flag
+            // so the form can default the toggle correctly. Read from the
+            // org's claim flags JSON.
+            hidePoweredBy={Boolean(
+              (organisationWithSettings.organisationClaim?.flags as
+                | { hidePoweredBy?: boolean }
+                | undefined)?.hidePoweredBy,
+            )}
             onFormSubmit={onBrandingPreferencesFormSubmit}
           />
         </section>

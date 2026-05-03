@@ -1,0 +1,61 @@
+# Why: Per-org "Hide Powered by Pacta" toggle in the existing branding admin
+#      UI. Without this, suppressing the email footer attribution required
+#      direct DB SQL — fine once, painful at scale.
+#
+#      Documenso already wires `OrganisationClaim.flags.hidePoweredBy`
+#      through `getEmailContext` → `BrandingSettings.brandingHidePoweredBy`
+#      → `template-footer.tsx` (where it gates the "Powered by" link).
+#      What was missing: a UI to mutate the flag without DB access.
+#
+#      Implementation strategy: extend the existing
+#      `organisation.settings.update` TRPC route + the existing
+#      `BrandingPreferencesForm` rather than building a new dedicated
+#      route/form. Single mutation atomically updates
+#      OrganisationGlobalSettings AND OrganisationClaim.flags. Single form
+#      means tenants edit branding + attribution preference together.
+#
+#      Files modified (all upstream — full file diffs in commit):
+#        1. packages/trpc/server/organisation-router/update-organisation-settings.types.ts
+#           — Added `hidePoweredBy?: boolean` to the request schema.
+#
+#        2. packages/trpc/server/organisation-router/update-organisation-settings.ts
+#           — When the request includes `hidePoweredBy`, look up the org's
+#             OrganisationClaim, merge the flag into the JSON `flags` column,
+#             save. Done as a separate prisma call (not nested in the
+#             organisation update payload) because Claim is a sibling table
+#             with a JSON column — easier to handle in isolation.
+#
+#        3. apps/remix/app/components/forms/branding-preferences-form.tsx
+#           — Added `hidePoweredBy: z.boolean().optional()` to the zod schema,
+#             added `hidePoweredBy` to the props (optional default),
+#             threaded into form's defaultValues, rendered a checkbox UI at
+#             the bottom of the form (only when context="Organisation"; not
+#             shown for teams since the flag is org-level).
+#
+#        4. apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.branding.tsx
+#           — Read current flag from `organisationClaim.flags.hidePoweredBy`,
+#             pass to the form as `hidePoweredBy` prop, include the form's
+#             returned value in the submit payload to TRPC.
+#
+#      What stays unchanged: the email footer rendering logic
+#      (template-footer.tsx, modified by overlay 023) already reads
+#      `branding.brandingHidePoweredBy` — that field is populated from the
+#      claim flag by `organisationGlobalSettingsToBranding()` upstream.
+#      No further changes needed there.
+#
+#      Fragility: MED. Touches 4 upstream files in the per-org settings
+#      pipeline. The TRPC route file is the one most likely to see upstream
+#      drift (Documenso adds new settings periodically). The form file is
+#      stable. Schema file is stable. Page file is stable.
+#
+#      Trade-off: this approach makes branding-related claim flags special-
+#      cased in the org-settings route. If we end up needing to mutate other
+#      claim flags from per-org UIs (cfr21, hipaa, etc.) the right move is
+#      to factor a separate `organisation.claim.update` TRPC route. For now
+#      a focused extension is the minimum viable path.
+#
+# Files modified (full file diffs in commit):
+#   packages/trpc/server/organisation-router/update-organisation-settings.types.ts
+#   packages/trpc/server/organisation-router/update-organisation-settings.ts
+#   apps/remix/app/components/forms/branding-preferences-form.tsx
+#   apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.branding.tsx

@@ -47,6 +47,9 @@ export const updateOrganisationSettingsRoute = authenticatedProcedure
       brandingUrl,
       brandingCompanyDetails,
 
+      // BizRethink overlay 025: per-org hidePoweredBy claim-flag toggle.
+      hidePoweredBy,
+
       // Email related settings.
       emailId,
       emailReplyTo,
@@ -128,6 +131,35 @@ export const updateOrganisationSettingsRoute = authenticatedProcedure
       throw new AppError(AppErrorCode.INVALID_BODY, {
         message: 'Personal organisations cannot update the sender details',
       });
+    }
+
+    // BizRethink overlay 025: if the request includes a hidePoweredBy value,
+    // mutate the org's OrganisationClaim.flags.hidePoweredBy. Each org has
+    // its own claim row (verified: OrganisationClaim has 1:1 relation with
+    // Organisation), so this is per-org. We do this in a separate prisma call
+    // because the claim is its own table with a JSON `flags` column — easier
+    // to handle as a focused update than to thread it through the org's
+    // nested update payload.
+    if (hidePoweredBy !== undefined) {
+      const orgWithClaim = await prisma.organisation.findUnique({
+        where: { id: organisationId },
+        include: { organisationClaim: true },
+      });
+
+      if (orgWithClaim?.organisationClaim) {
+        const currentFlags = (orgWithClaim.organisationClaim.flags ?? {}) as Record<string, unknown>;
+        const nextFlags = { ...currentFlags, hidePoweredBy };
+
+        await prisma.organisationClaim.update({
+          where: { id: orgWithClaim.organisationClaim.id },
+          // The `flags` column is typed as TClaimFlags via Zod's
+          // @zod.custom.use directive on the Prisma model. We've shape-
+          // matched it via spread so the cast is sound at runtime;
+          // TypeScript can't statically verify this, so we cast through
+          // unknown.
+          data: { flags: nextFlags as unknown as Prisma.OrganisationClaimUpdateInput['flags'] },
+        });
+      }
     }
 
     await prisma.organisation.update({

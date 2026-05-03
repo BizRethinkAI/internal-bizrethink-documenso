@@ -46,6 +46,10 @@ const ZBrandingPreferencesFormSchema = z.object({
     .nullish(),
   brandingUrl: z.string().url().optional().or(z.literal('')),
   brandingCompanyDetails: z.string().max(500).optional(),
+  // ADDED for BizRethink overlay 025: per-org "Hide Powered by Pacta" toggle.
+  // Mutates OrganisationClaim.flags.hidePoweredBy via the existing
+  // organisation.settings.update TRPC route (extended in overlay 025).
+  hidePoweredBy: z.boolean().optional(),
 });
 
 export type TBrandingPreferencesFormSchema = z.infer<typeof ZBrandingPreferencesFormSchema>;
@@ -58,6 +62,10 @@ type SettingsSubset = Pick<
 export type BrandingPreferencesFormProps = {
   canInherit?: boolean;
   settings: SettingsSubset;
+  // ADDED for BizRethink overlay 025: caller passes the current claim flag
+  // value so the form can default the toggle correctly. When undefined, the
+  // toggle defaults to false. Only relevant for context="Organisation".
+  hidePoweredBy?: boolean;
   onFormSubmit: (data: TBrandingPreferencesFormSchema) => Promise<void>;
   context: 'Team' | 'Organisation';
 };
@@ -65,6 +73,7 @@ export type BrandingPreferencesFormProps = {
 export function BrandingPreferencesForm({
   canInherit = false,
   settings,
+  hidePoweredBy,
   onFormSubmit,
   context,
 }: BrandingPreferencesFormProps) {
@@ -82,6 +91,7 @@ export function BrandingPreferencesForm({
       brandingUrl: settings.brandingUrl ?? '',
       brandingLogo: undefined,
       brandingCompanyDetails: settings.brandingCompanyDetails ?? '',
+      hidePoweredBy: hidePoweredBy ?? false,
     },
     resolver: zodResolver(ZBrandingPreferencesFormSchema),
   });
@@ -333,6 +343,41 @@ export function BrandingPreferencesForm({
               )}
             />
           </div>
+
+          {/* BizRethink overlay 025: per-org hidePoweredBy toggle. Decoupled
+              from brandingEnabled because some tenants may want to hide
+              attribution even without uploading their own logo. */}
+          {context === 'Organisation' && (
+            <FormField
+              control={form.control}
+              name="hidePoweredBy"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start gap-x-3 space-y-0 rounded-md border border-border p-4">
+                  <FormControl>
+                    <input
+                      type="checkbox"
+                      checked={field.value ?? false}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                      className="mt-1 h-4 w-4 cursor-pointer rounded border-border accent-foreground"
+                      data-testid="hide-powered-by-toggle"
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel className="cursor-pointer">
+                      <Trans>Hide "Powered by Pacta" attribution</Trans>
+                    </FormLabel>
+                    <FormDescription>
+                      <Trans>
+                        When enabled, outgoing emails from this organisation won't display the
+                        "This document was sent using Pacta" footer line. Useful when this
+                        organisation has its own brand identity it wants to present unattributed.
+                      </Trans>
+                    </FormDescription>
+                  </div>
+                </FormItem>
+              )}
+            />
+          )}
 
           <div className="flex flex-row justify-end space-x-4">
             <Button type="submit" loading={form.formState.isSubmitting}>
