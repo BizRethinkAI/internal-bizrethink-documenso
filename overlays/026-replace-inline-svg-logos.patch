@@ -1,0 +1,48 @@
+# Why: Overlay 024 replaced the user-facing "Documenso" copy across routes,
+#      and our asset commit replaced the static favicon/logo PNG files. But
+#      the platform's PRIMARY brand surface — the inline `<BrandingLogo>` and
+#      `<BrandingLogoIcon>` SVG components — are React components with the
+#      Documenso wordmark / seal embedded as path data. Those didn't change.
+#      Result: post-deploy, every signed-in page still showed the Documenso
+#      wordmark in the app header even though everything else read "Pacta".
+#
+#      This overlay replaces both inline SVG components with the Pacta seal
+#      design (matching `packages/bizrethink/branding/pacta-symbol.svg`).
+#
+#      Three files modified:
+#
+#      1. apps/remix/app/components/general/branding-logo.tsx
+#         Horizontal lockup (seal on left, "pacta" wordmark on right). Uses
+#         currentColor for all fills/strokes so it inherits text color from
+#         parent (matches upstream's <BrandingLogo className="text-foreground
+#         h-6" /> pattern). Wordmark rendered as <text> element with system-
+#         font fallback chain — keeps the SVG payload tiny vs converting the
+#         letterforms to paths.
+#
+#      2. apps/remix/app/components/general/branding-logo-icon.tsx
+#         Square seal-only mark for ultra-small contexts (mobile signing-page
+#         header). Same currentColor approach.
+#
+#      3. apps/remix/app/routes/_unauthenticated+/_layout.tsx
+#         Added <BrandingLogo /> above the unauthenticated form card. Upstream
+#         Documenso renders signin / signup / verify-email with no logo,
+#         relying solely on the background pattern for brand context. We add
+#         the Pacta lockup so signed-out screens carry platform branding too.
+#
+#      Fragility: LOW-MED. The component files have stable APIs (just an SVG
+#      attributes prop). Upstream rarely changes these — when they do, we
+#      keep ours. The unauthenticated layout edit is a single import + 3-line
+#      JSX block; trivial to merge.
+#
+#      Trade-off: rendering the wordmark via <text> means it depends on the
+#      browser's font fallback chain. We've spec'd a thorough chain
+#      (-apple-system → BlinkMacSystemFont → Segoe UI → system-ui → Helvetica
+#      Neue → sans-serif) that yields acceptable rendering on macOS / Windows
+#      / Linux / iOS / Android. If pixel-perfect cross-OS consistency becomes
+#      important later, convert "pacta" letterforms to SVG paths via a font
+#      converter (~30 min one-time work).
+#
+# Files modified (full file diffs in commit):
+#   apps/remix/app/components/general/branding-logo.tsx
+#   apps/remix/app/components/general/branding-logo-icon.tsx
+#   apps/remix/app/routes/_unauthenticated+/_layout.tsx
