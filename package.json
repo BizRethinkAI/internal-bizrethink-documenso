@@ -109,10 +109,6 @@
     "zod": "$zod",
     "fumadocs-mdx": {
       "zod": "^4.3.5"
-    },
-    "brace-expansion@^1.0.0": "^1.1.13",
-    "postcss": "^8.5.10",
-    "uuid": "^14.0.0",
-    "@aws-sdk/xml-builder": "^3.972.19"
+    }
   }
 }
