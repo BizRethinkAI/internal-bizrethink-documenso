@@ -1,4 +1,4 @@
-import { bytesToUtf8 } from '@noble/ciphers/utils.js';
+import { bytesToUtf8 } from '@noble/ciphers/utils';
 
 import { DOCUMENSO_ENCRYPTION_KEY } from '@documenso/lib/constants/crypto';
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
