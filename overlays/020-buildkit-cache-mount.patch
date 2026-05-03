@@ -1,0 +1,59 @@
+# Why: Coolify rebuilds the image on every push to main. Without a cache,
+#      `npm ci` (the installer stage) re-downloads ~2GB of tarballs from
+#      the npm registry every build — adding 60-90s of network I/O even
+#      when only application code changed. BuildKit's cache mount feature
+#      lets the npm cache directory persist across builds: subsequent
+#      `npm ci` runs hit the local cache for unchanged packages and only
+#      pull what's actually new in the lockfile.
+#
+#      Two pieces required:
+#        1. `# syntax=docker/dockerfile:1.6` directive at the very top of
+#           the Dockerfile to enable BuildKit's `--mount` syntax. Coolify's
+#           Docker 29.4.2 + Buildx already supports this; the directive
+#           just opts in.
+#        2. `RUN --mount=type=cache,target=/root/.npm,sharing=locked npm ci`
+#           on the installer stage's npm-ci line.
+#
+#      `sharing=locked` prevents two parallel builds from corrupting the
+#      cache. The cache survives between Coolify deploys on the same
+#      build host. First build is no faster (cache empty), subsequent
+#      builds with stable lockfile are ~60-90s faster.
+#
+#      Why only the installer stage and not the runner stage:
+#        • The runner stage runs as `USER nodejs` (uid 1001) BEFORE
+#          `npm ci --only=production`. Its npm cache lives at
+#          /home/nodejs/.npm, not /root/.npm. Adding a cache mount to the
+#          runner would need uid=1001,gid=1001 + careful target path
+#          adjustments — extra complexity for marginal speedup since the
+#          production-only install is already a small subset of installer.
+#        • The installer stage's `npm ci` (full devDependencies install
+#          for the build pipeline) is the heavy one. Caching it covers
+#          ~95% of the win.
+#
+#      Cache busting (rare): if the cache ever gets poisoned, change the
+#      mount `id=` parameter to invalidate (e.g. `id=npm-v2`).
+#
+#      Fragility: LOW. The change is 2 lines (1 directive at top, 1 mount
+#      arg). Upstream may eventually adopt BuildKit cache mounts themselves
+#      (it's a popular pattern); when they do, this overlay becomes a
+#      conflict-free no-op merge.
+#
+diff --git a/docker/Dockerfile b/docker/Dockerfile
+--- a/docker/Dockerfile
++++ b/docker/Dockerfile
+@@ -1,3 +1,4 @@
++# syntax=docker/dockerfile:1.6
+ ###########################
+ #     BASE CONTAINER      #
+ ###########################
+@@ -79,7 +80,11 @@ COPY --from=builder /app/lingui.config.ts ./lingui.config.ts
+ COPY --from=builder /app/patches ./patches
+
+-RUN npm ci
++# MODIFIED for BizRethink overlay 020: BuildKit cache mount on the npm cache
++# directory. Reuses tarballs across rebuilds, cutting ~60-90s off repeat
++# Coolify deploys when only application code changes (no lockfile churn).
++# sharing=locked prevents concurrent build corruption. See overlays/020.
++RUN --mount=type=cache,target=/root/.npm,sharing=locked npm ci
+
+ # Then copy all the source code (as it changes more often)

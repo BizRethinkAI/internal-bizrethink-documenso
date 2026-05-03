@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.6
 ###########################
 #     BASE CONTAINER      #
 ###########################
@@ -79,7 +80,11 @@ COPY --from=builder /app/out/package-lock.json ./package-lock.json
 COPY --from=builder /app/lingui.config.ts ./lingui.config.ts
 COPY --from=builder /app/patches ./patches
 
-RUN npm ci
+# MODIFIED for BizRethink overlay 020: BuildKit cache mount on the npm cache
+# directory. Reuses tarballs across rebuilds, cutting ~60-90s off repeat
+# Coolify deploys when only application code changes (no lockfile churn).
+# sharing=locked prevents concurrent build corruption. See overlays/020.
+RUN --mount=type=cache,target=/root/.npm,sharing=locked npm ci
 
 # Then copy all the source code (as it changes more often)
 COPY --from=builder /app/out/full/ .
