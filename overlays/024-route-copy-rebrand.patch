@@ -1,0 +1,53 @@
+# Why: Bulk replace user-facing "Documenso" copy in apps/remix routes +
+#      components — page titles, share metadata, completion CTAs, signup
+#      terms-of-service URLs, signature-disclosure articles, etc. ~30
+#      string substitutions across 17 .tsx files.
+#
+#      Substitutions applied (most-specific first):
+#        1. "Documenso, Inc."  → "BizRethink AI"
+#        2. "Documenso Logo"   → "Pacta Logo"
+#        3. "Documenso License" → "Pacta License"
+#        4. Standalone "Documenso" → "Pacta"
+#
+#      URL substitutions (manual edits):
+#        - https://documen.so/terms   → https://bizrethink.ai/terms
+#        - https://documen.so/privacy → https://bizrethink.ai/privacy
+#        - admin@documenso.com (placeholder) → admin@bizrethink.ai
+#
+#      Files INTENTIONALLY skipped (admin-only / suppressed surfaces):
+#        - root.tsx (license-expired banner, suppressed via overlay 005)
+#        - admin-license-card.tsx, admin-license-status-banner.tsx
+#          (suppressed via overlay 005)
+#        - organisation-billing-banner.tsx (billing disabled in our build)
+#        - meta.ts (already covered by overlay 022)
+#
+#      Tooling: see /tmp/rebrand-routes.py for the substitution script.
+#      Re-run it after upstream merges to catch new "Documenso" mentions.
+#
+#      Translation catalogs (packages/lib/translations/*.po) are regenerated
+#      separately via `npm run translate:extract`. They auto-pick up the new
+#      source strings; manual .po edits would be lost.
+#
+#      Fragility: MED. This is the largest patch surface — 17 files. Upstream
+#      is most likely to add new "Documenso" mentions here when they ship
+#      new features. The substitution script is idempotent so re-running it
+#      after a sync resolves new conflicts cleanly.
+#
+# Files modified (full file diffs in commit):
+#   apps/remix/app/components/dialogs/account-delete-dialog.tsx
+#   apps/remix/app/components/dialogs/envelope-distribute-dialog.tsx
+#   apps/remix/app/components/dialogs/webhook-create-dialog.tsx
+#   apps/remix/app/components/dialogs/webhook-edit-dialog.tsx
+#   apps/remix/app/components/embed/embed-document-completed.tsx
+#   apps/remix/app/components/forms/signup.tsx
+#   apps/remix/app/components/general/app-nav-mobile.tsx
+#   apps/remix/app/components/general/document/document-certificate-qr-view.tsx
+#   apps/remix/app/components/general/envelope-editor/envelope-editor-settings-dialog.tsx
+#   apps/remix/app/routes/_authenticated+/o.$orgUrl.support.tsx
+#   apps/remix/app/routes/_profile+/_layout.tsx
+#   apps/remix/app/routes/_profile+/p.$url.tsx
+#   apps/remix/app/routes/_recipient+/sign.$token+/_index.tsx
+#   apps/remix/app/routes/_share+/share.$slug.tsx
+#   apps/remix/app/routes/_unauthenticated+/articles.signature-disclosure.tsx
+#   apps/remix/app/routes/_unauthenticated+/o.$orgUrl.signin.tsx
+#   apps/remix/app/routes/_unauthenticated+/verify-email.$token.tsx

@@ -147,7 +147,7 @@ export default function VerifyEmailPage({ loaderData }: Route.ComponentProps) {
             <p className="text-muted-foreground mt-4">
               <Trans>
                 Your email has been successfully confirmed! You can now use all features of
-                Documenso.
+                Pacta.
               </Trans>
             </p>
 
@@ -174,7 +174,7 @@ export default function VerifyEmailPage({ loaderData }: Route.ComponentProps) {
 
             <p className="text-muted-foreground mt-4">
               <Trans>
-                Your email has already been confirmed. You can now use all features of Documenso.
+                Your email has already been confirmed. You can now use all features of Pacta.
               </Trans>
             </p>
 

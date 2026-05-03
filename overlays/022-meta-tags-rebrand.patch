@@ -1,0 +1,29 @@
+# Why: HTML <title>, <meta name="description">, OG (og:title, og:image,
+#      og:description), and Twitter (twitter:site, twitter:card) tags all
+#      hard-code "Documenso" branding from upstream. This overlay swaps them
+#      for Pacta brand strings sourced from packages/lib/constants/app.ts
+#      (overlay 021).
+#
+#      Specific changes:
+#        - Page title format: "{page} - Documenso" → "{page} - Pacta"
+#        - Default title: "Documenso" → "Pacta"
+#        - Description: long upstream marketing blurb → short Pacta tagline
+#        - og:title: "Documenso - The Open Source DocuSign Alternative"
+#                  → "Pacta — Agreements that hold"
+#        - twitter:site: "@documenso" → "@bizrethink"
+#        - author: "Documenso, Inc." → "BizRethink AI"
+#        - keywords: rewritten to focus on multi-tenant + audit-trail story
+#
+#      What stays unchanged: the og:image / twitter:image references the
+#      same `/opengraph-image.jpg` filename. The actual JPEG file gets
+#      replaced separately as part of the asset commit (Pacta lockup over
+#      charcoal background).
+#
+#      Fragility: LOW-MED. Upstream rarely touches meta.ts, but if they add
+#      new tags we need to merge in the new entries. Conflicts are easy to
+#      resolve — keep ours, ignore theirs.
+#
+diff --git a/apps/remix/app/utils/meta.ts b/apps/remix/app/utils/meta.ts
+--- a/apps/remix/app/utils/meta.ts
++++ b/apps/remix/app/utils/meta.ts
+# (full file replacement — see commit diff for exact lines)

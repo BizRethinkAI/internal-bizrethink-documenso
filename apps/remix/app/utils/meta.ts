@@ -1,14 +1,22 @@
+// MODIFIED for BizRethink overlay 022: rebrand HTML meta tags + OG/Twitter
+// previews from upstream Documenso defaults to Pacta. Imports brand constants
+// from app.ts (overlay 021) so future renames are a one-file change.
 import { type MessageDescriptor, i18n } from '@lingui/core';
 
-import { NEXT_PUBLIC_WEBAPP_URL } from '@documenso/lib/constants/app';
+import {
+  APP_FULL_NAME,
+  APP_NAME,
+  APP_PARENT_BRAND,
+  NEXT_PUBLIC_WEBAPP_URL,
+} from '@documenso/lib/constants/app';
 
 export const appMetaTags = (title?: MessageDescriptor) => {
   const description =
-    'Join Documenso, the open signing infrastructure, and get a 10x better signing experience. Pricing starts at $30/mo. forever! Sign in now and enjoy a faster, smarter, and more beautiful document signing process. Integrates with your favorite tools, customizable, and expandable. Support our mission and become a part of our open-source community.';
+    `${APP_FULL_NAME} — the document signing platform for BizRethink companies. Send, sign, and seal contracts with branded per-tenant identity, audit trails, and AATL-grade cryptographic signatures. Built on the Documenso open-source core.`;
 
   return [
     {
-      title: title ? `${i18n._(title)} - Documenso` : 'Documenso',
+      title: title ? `${i18n._(title)} - ${APP_NAME}` : APP_NAME,
     },
     {
       name: 'description',
@@ -16,12 +24,11 @@ export const appMetaTags = (title?: MessageDescriptor) => {
     },
     {
       name: 'keywords',
-      content:
-        'Documenso, open source, DocuSign alternative, document signing, open signing infrastructure, open-source community, fast signing, beautiful signing, smart templates',
+      content: `${APP_NAME}, ${APP_PARENT_BRAND}, document signing, electronic signatures, contract management, audit trail, cryptographic signing, multi-tenant signing platform`,
     },
     {
       name: 'author',
-      content: 'Documenso, Inc.',
+      content: APP_PARENT_BRAND,
     },
     {
       name: 'robots',
@@ -29,7 +36,7 @@ export const appMetaTags = (title?: MessageDescriptor) => {
     },
     {
       property: 'og:title',
-      content: 'Documenso - The Open Source DocuSign Alternative',
+      content: `${APP_NAME} — Agreements that hold`,
     },
     {
       property: 'og:description',
@@ -49,7 +56,7 @@ export const appMetaTags = (title?: MessageDescriptor) => {
     },
     {
       name: 'twitter:site',
-      content: '@documenso',
+      content: '@bizrethink',
     },
     {
       name: 'twitter:description',

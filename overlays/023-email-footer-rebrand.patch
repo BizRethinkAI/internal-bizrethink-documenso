@@ -1,0 +1,31 @@
+# Why: Email footer is the most-visible Documenso brand surface — every
+#      signing-invite email shows it, every reminder, every completion
+#      notice. Three changes:
+#
+#        1. "Powered by Documenso" link → "Powered by Pacta", with the URL
+#           pointing to bizrethink.ai instead of documen.so/mail-footer.
+#        2. Link color flips from Documenso's `#7AC455` (green) to charcoal
+#           `#1f2937` matching Pacta's neutral palette (per the brand
+#           decisions locked in the rebrand plan).
+#        3. Address fallback (when an org has brandingEnabled=false or no
+#           brandingCompanyDetails set): "Documenso, Inc. / 2261 Market
+#           Street, San Francisco, CA" → "BizRethink AI (Server Baba Inc.) /
+#           Florida, USA".
+#
+#      The Pacta product name and parent brand are read from APP_NAME and
+#      APP_PARENT_BRAND constants in packages/lib/constants/app.ts (added
+#      via overlay 021), so future renames are a one-file change.
+#
+#      What stays unchanged: the brandingEnabled / brandingHidePoweredBy
+#      gating logic. Tenants that set their own `brandingCompanyDetails` see
+#      THEIR address; tenants that haven't yet (or use platform default) see
+#      the BizRethink fallback above.
+#
+#      Fragility: LOW. Footer template gets ~1 commit per quarter upstream.
+#      Imports at the top will conflict if upstream adds new imports; trivial
+#      to resolve. The Trans/JSX block is stable.
+#
+diff --git a/packages/email/template-components/template-footer.tsx b/packages/email/template-components/template-footer.tsx
+--- a/packages/email/template-components/template-footer.tsx
++++ b/packages/email/template-components/template-footer.tsx
+# (full file diff — see commit)

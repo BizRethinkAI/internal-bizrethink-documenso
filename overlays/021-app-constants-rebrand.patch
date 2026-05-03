@@ -1,0 +1,39 @@
+# Why: Replace upstream Documenso brand defaults at the constant layer so all
+#      downstream consumers (meta.ts, email templates, route copy) read from a
+#      single source of truth. Two changes:
+#
+#        1. SUPPORT_EMAIL default flips from "support@documenso.com" to
+#           "support@bizrethink.ai". Env var override (NEXT_PUBLIC_SUPPORT_EMAIL)
+#           still works — this only changes the fallback when no env is set.
+#
+#        2. New constants APP_NAME ("Pacta"), APP_PARENT_BRAND ("BizRethink AI"),
+#           APP_FULL_NAME ("Pacta by BizRethink AI"). Subsequent overlays
+#           (022 meta tags, 023 email footer, 024 route copy) import these
+#           instead of hardcoding strings — meaning future renames are a
+#           one-file constant change.
+#
+#      Fragility: LOW. App.ts gets ~1 commit per quarter upstream. Our edit is
+#      additive (new exports) plus a one-line default change — both easy to
+#      reapply on conflict.
+#
+diff --git a/packages/lib/constants/app.ts b/packages/lib/constants/app.ts
+--- a/packages/lib/constants/app.ts
++++ b/packages/lib/constants/app.ts
+@@ -20,7 +20,15 @@ export const IS_BILLING_ENABLED = () => env('NEXT_PUBLIC_FEATURE_BILLING_ENABLED
+ export const API_V2_BETA_URL = '/api/v2-beta';
+ export const API_V2_URL = '/api/v2';
+
+-export const SUPPORT_EMAIL = env('NEXT_PUBLIC_SUPPORT_EMAIL') ?? 'support@documenso.com';
++// MODIFIED for BizRethink overlay 021: rebrand support email default.
++// Operators can still override via NEXT_PUBLIC_SUPPORT_EMAIL env var.
++export const SUPPORT_EMAIL = env('NEXT_PUBLIC_SUPPORT_EMAIL') ?? 'support@bizrethink.ai';
++
++// Added for BizRethink overlay 021: canonical product name used in meta tags,
++// page titles, and email copy. Pacta is the BizRethink AI document signing
++// platform.
++export const APP_NAME = 'Pacta';
++export const APP_PARENT_BRAND = 'BizRethink AI';
++export const APP_FULL_NAME = `${APP_NAME} by ${APP_PARENT_BRAND}`;
+
+ export const USE_INTERNAL_URL_BROWSERLESS = () =>
+   env('NEXT_PUBLIC_USE_INTERNAL_URL_BROWSERLESS') === 'true';

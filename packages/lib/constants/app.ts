@@ -20,7 +20,16 @@ export const IS_BILLING_ENABLED = () => env('NEXT_PUBLIC_FEATURE_BILLING_ENABLED
 export const API_V2_BETA_URL = '/api/v2-beta';
 export const API_V2_URL = '/api/v2';
 
-export const SUPPORT_EMAIL = env('NEXT_PUBLIC_SUPPORT_EMAIL') ?? 'support@documenso.com';
+// MODIFIED for BizRethink overlay 021: rebrand support email default.
+// Operators can still override via NEXT_PUBLIC_SUPPORT_EMAIL env var.
+export const SUPPORT_EMAIL = env('NEXT_PUBLIC_SUPPORT_EMAIL') ?? 'support@bizrethink.ai';
+
+// Added for BizRethink overlay 021: canonical product name used in meta tags,
+// page titles, and email copy. Pacta is the BizRethink AI document signing
+// platform.
+export const APP_NAME = 'Pacta';
+export const APP_PARENT_BRAND = 'BizRethink AI';
+export const APP_FULL_NAME = `${APP_NAME} by ${APP_PARENT_BRAND}`;
 
 export const USE_INTERNAL_URL_BROWSERLESS = () =>
   env('NEXT_PUBLIC_USE_INTERNAL_URL_BROWSERLESS') === 'true';
