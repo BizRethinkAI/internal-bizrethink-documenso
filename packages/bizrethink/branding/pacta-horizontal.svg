@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 160" width="480" height="160">
+  <!-- Pacta horizontal lockup — symbol on left, wordmark on right.
+       For use in app navigation header, email header, signing-page banner. -->
+  <!-- Symbol (scaled-down version of pacta-symbol.svg, positioned left) -->
+  <g transform="translate(20, 20) scale(0.6)">
+    <circle cx="100" cy="100" r="88" fill="none" stroke="#1f2937" stroke-width="6"/>
+    <circle cx="100" cy="100" r="78" fill="none" stroke="#1f2937" stroke-width="1.5"/>
+    <circle cx="100" cy="14" r="2" fill="#1f2937"/>
+    <circle cx="100" cy="186" r="2" fill="#1f2937"/>
+    <circle cx="14" cy="100" r="2" fill="#1f2937"/>
+    <circle cx="186" cy="100" r="2" fill="#1f2937"/>
+    <path d="
+      M 70 50
+      L 70 150
+      L 88 150
+      L 88 105
+      L 113 105
+      A 27.5 27.5 0 0 0 113 50
+      L 70 50
+      Z
+      M 88 64
+      L 113 64
+      A 13.5 13.5 0 0 1 113 91
+      L 88 91
+      Z
+    " fill="#1f2937" fill-rule="evenodd"/>
+    <circle cx="100" cy="160" r="3.5" fill="#1f2937"/>
+  </g>
+  <!-- Wordmark (right of symbol) -->
+  <text x="170" y="100" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'Helvetica Neue', sans-serif" font-weight="600" font-size="76" fill="#1f2937" letter-spacing="-2.5">pacta</text>
+  <!-- Tagline below wordmark -->
+  <text x="170" y="125" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'Helvetica Neue', sans-serif" font-weight="400" font-size="11" fill="#6b7280" letter-spacing="2.5">BY BIZRETHINK AI</text>
+</svg>

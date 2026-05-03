@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Pacta symbol — circular notarial seal with geometric P -->
+  <!-- Outer ring -->
+  <circle cx="100" cy="100" r="88" fill="none" stroke="#1f2937" stroke-width="6"/>
+  <!-- Inner ring (decorative double-line) -->
+  <circle cx="100" cy="100" r="78" fill="none" stroke="#1f2937" stroke-width="1.5"/>
+  <!-- Cardinal dots (notarial-stamp ornament) -->
+  <circle cx="100" cy="14" r="2" fill="#1f2937"/>
+  <circle cx="100" cy="186" r="2" fill="#1f2937"/>
+  <circle cx="14" cy="100" r="2" fill="#1f2937"/>
+  <circle cx="186" cy="100" r="2" fill="#1f2937"/>
+  <!-- Geometric P with even-odd fill (bowl is a true half-circle, inner cutout is a smaller half-circle) -->
+  <path d="
+    M 70 50
+    L 70 150
+    L 88 150
+    L 88 105
+    L 113 105
+    A 27.5 27.5 0 0 0 113 50
+    L 70 50
+    Z
+    M 88 64
+    L 113 64
+    A 13.5 13.5 0 0 1 113 91
+    L 88 91
+    Z
+  " fill="#1f2937" fill-rule="evenodd"/>
+  <!-- Signature dot (small period below the P, inside the seal) -->
+  <circle cx="100" cy="160" r="3.5" fill="#1f2937"/>
+</svg>
