@@ -22,11 +22,13 @@ export default function Layout() {
 
         {/* MODIFIED for BizRethink overlay 026: render Pacta brand lockup
             above the unauthenticated card so signin / signup / verify-email
-            pages carry platform branding. Upstream Documenso renders these
-            screens with no logo, leaving the brand context entirely to the
-            background pattern. */}
-        <div className="relative mb-8 flex justify-center">
-          <BrandingLogo className="h-10 w-auto text-foreground" />
+            pages carry platform branding. Upstream renders these screens
+            with no logo. Wordmark large + tagline beneath for presence. */}
+        <div className="relative mb-12 flex flex-col items-center gap-y-3">
+          <BrandingLogo className="h-14 w-auto text-foreground" />
+          <p className="text-muted-foreground text-xs font-medium tracking-[0.2em] uppercase">
+            Agreements that hold
+          </p>
         </div>
 
         <div className="relative w-full">

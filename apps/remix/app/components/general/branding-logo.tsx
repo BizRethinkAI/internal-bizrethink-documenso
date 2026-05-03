@@ -2,47 +2,38 @@ import type { SVGAttributes } from 'react';
 
 export type LogoProps = SVGAttributes<SVGSVGElement>;
 
-// MODIFIED for BizRethink overlay 026: replace upstream Documenso wordmark
-// with Pacta seal + wordmark horizontal lockup. Uses `currentColor` for all
-// fills/strokes so it inherits text color from parent (matches upstream
-// component behavior — `<BrandingLogo className="text-foreground h-6" />`).
+// MODIFIED for BizRethink overlay 026: wordmark-led design.
+// Heavy weight, tight tracking, signature accent period in warm gold.
+// No symbol — the wordmark IS the brand. Period style follows the
+// Stripe / Notion convention: a single colored mark that anchors the
+// logo at any size.
 //
-// Seal symbol on the left, "pacta" wordmark on the right. Aspect ratio
-// designed for ~4:1 horizontal display at heights from h-3 (12px) up to
-// h-14 (56px). The viewBox 480×120 is the design grid; sized externally
-// via className.
+// Wordmark uses currentColor so it inherits text color from parent
+// (works on light + dark themes). Accent period is fixed gold so the
+// brand color stays consistent across contexts.
+//
+// Period is placed via <circle> rather than tspan so its position is
+// guaranteed regardless of which fallback font renders the wordmark.
+// Tradeoff: if the wordmark renders narrower than expected on a system
+// with no Inter-equivalent font, the period sits slightly further from
+// the "a" — still readable, just not pixel-perfect.
 export const BrandingLogo = ({ ...props }: LogoProps) => {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 120" {...props}>
-      {/* Seal — outer ring */}
-      <circle cx="60" cy="60" r="52" fill="none" stroke="currentColor" strokeWidth="4" />
-      {/* Seal — inner ring (decorative) */}
-      <circle cx="60" cy="60" r="46" fill="none" stroke="currentColor" strokeWidth="1" />
-      {/* Seal — cardinal dots */}
-      <circle cx="60" cy="3" r="1.5" fill="currentColor" />
-      <circle cx="60" cy="117" r="1.5" fill="currentColor" />
-      <circle cx="3" cy="60" r="1.5" fill="currentColor" />
-      <circle cx="117" cy="60" r="1.5" fill="currentColor" />
-      {/* Geometric P inside seal */}
-      <path
-        d="M 42 30 L 42 90 L 52.5 90 L 52.5 63 L 67.5 63 A 16.5 16.5 0 0 0 67.5 30 L 42 30 Z M 52.5 38 L 67.5 38 A 8 8 0 0 1 67.5 54.5 L 52.5 54.5 Z"
-        fill="currentColor"
-        fillRule="evenodd"
-      />
-      {/* Signature dot below the P */}
-      <circle cx="60" cy="96" r="2" fill="currentColor" />
-      {/* Wordmark "pacta" — geometric humanist sans, currentColor fill */}
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 96" {...props}>
       <text
-        x="148"
+        x="0"
         y="78"
-        fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'Helvetica Neue', sans-serif"
-        fontWeight="600"
-        fontSize="64"
+        fontFamily="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif"
+        fontWeight="900"
+        fontSize="88"
         fill="currentColor"
-        letterSpacing="-2"
+        letterSpacing="-5"
       >
         pacta
       </text>
+      {/* Signature accent period — warm gold (#d4a574). Hand-placed so it
+          sits just right of the "a" regardless of font rendering. */}
+      <circle cx="218" cy="82" r="8" fill="#d4a574" />
     </svg>
   );
 };

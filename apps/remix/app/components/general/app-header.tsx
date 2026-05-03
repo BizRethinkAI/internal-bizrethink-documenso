@@ -63,7 +63,9 @@ export const Header = ({ className, ...props }: HeaderProps) => {
           to={getRootHref(params)}
           className="focus-visible:ring-ring ring-offset-background hidden rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 md:inline"
         >
-          <BrandingLogo className="h-6 w-auto" />
+          {/* MODIFIED for BizRethink overlay 026: bumped from h-6 to h-9
+              — gives the wordmark proper presence in the admin nav. */}
+          <BrandingLogo className="h-9 w-auto" />
         </Link>
 
         <AppNavDesktop setIsCommandMenuOpen={setIsCommandMenuOpen} />

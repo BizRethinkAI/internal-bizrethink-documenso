@@ -2,33 +2,25 @@ import type { SVGAttributes } from 'react';
 
 export type LogoProps = SVGAttributes<SVGSVGElement>;
 
-// MODIFIED for BizRethink overlay 026: replace upstream Documenso square
-// icon with Pacta seal symbol. Square 1:1 viewBox (200×200) so it works
-// equally as a favicon-style mark or app-tile icon. Uses `currentColor`
-// throughout for theme inheritance.
+// MODIFIED for BizRethink overlay 026: square symbol matching the
+// wordmark identity. Just a heavy lowercase "p" with the signature gold
+// accent dot — no seal motif. Hand-crafted as paths so it renders
+// identically at every size including 16×16 favicon.
 //
 // Used by upstream in the envelope-signer-header on small screens
-// (`<BrandingLogoIcon className="h-6 w-auto md:hidden" />`).
+// (<BrandingLogoIcon className="h-6 w-auto md:hidden" />).
 export const BrandingLogoIcon = ({ ...props }: LogoProps) => {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" {...props}>
-      {/* Outer ring */}
-      <circle cx="100" cy="100" r="88" fill="none" stroke="currentColor" strokeWidth="6" />
-      {/* Inner ring (decorative double-line) */}
-      <circle cx="100" cy="100" r="78" fill="none" stroke="currentColor" strokeWidth="1.5" />
-      {/* Cardinal dots */}
-      <circle cx="100" cy="14" r="2" fill="currentColor" />
-      <circle cx="100" cy="186" r="2" fill="currentColor" />
-      <circle cx="14" cy="100" r="2" fill="currentColor" />
-      <circle cx="186" cy="100" r="2" fill="currentColor" />
-      {/* Geometric P with cutout */}
+      {/* Heavy lowercase "p" — stem on left, bowl extending right, descender
+          below baseline. Inner bowl cutout via fill-rule="evenodd". */}
       <path
-        d="M 70 50 L 70 150 L 88 150 L 88 105 L 113 105 A 27.5 27.5 0 0 0 113 50 L 70 50 Z M 88 64 L 113 64 A 13.5 13.5 0 0 1 113 91 L 88 91 Z"
+        d="M 50 35 L 80 35 A 35 35 0 0 1 80 105 L 80 165 L 50 165 Z M 80 50 A 18 18 0 0 1 80 90 Z"
         fill="currentColor"
         fillRule="evenodd"
       />
-      {/* Signature dot */}
-      <circle cx="100" cy="160" r="3.5" fill="currentColor" />
+      {/* Signature gold accent dot, matching the wordmark's period. */}
+      <circle cx="135" cy="100" r="11" fill="#d4a574" />
     </svg>
   );
 };
