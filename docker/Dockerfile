@@ -6,6 +6,13 @@ FROM node:22-alpine3.22 AS base
 RUN apk add --no-cache openssl
 RUN apk add --no-cache font-freefont
 
+# MODIFIED for BizRethink overlay 019: enable corepack so the build uses
+# the npm version declared in package.json#packageManager (currently
+# npm@11.11.0). Without this, the base image's npm 10.9.7 ships, and npm
+# 10 vs 11 dedupe/overrides differences flip 24 typecheck errors in the
+# apps/remix editor-field-*-form.tsx files. See overlays/019 for details.
+RUN corepack enable npm
+
 
 ###########################
 #    BUILDER CONTAINER    #

@@ -1,0 +1,50 @@
+# Why: Documenso 2.10.0+ declares `"packageManager": "npm@11.11.0"` in
+#      package.json. Upstream's CI honors this via `corepack enable npm`
+#      (.github/actions/node-install/action.yml). Our Dockerfile uses the
+#      npm baked into `node:22-alpine3.22`, which is npm 10.9.7. The build
+#      log even surfaces the warning:
+#
+#         npm warn EBADENGINE Unsupported engine {
+#           package: '@documenso/root@2.10.0',
+#           required: { npm: '>=11.11.0', node: '>=22.0.0' },
+#           current: { node: 'v22.22.2', npm: '10.9.7' }
+#         }
+#
+#      Why this matters for the build: npm 10 vs npm 11 differ in how they
+#      resolve `overrides` and dedupe transitive `@types/*`. Same lockfile,
+#      different physical `node_modules` — enough to flip TypeScript's
+#      `Control<{...}>` → `Control<any>` (FormControlType) variance check
+#      in apps/remix/app/components/forms/editor/editor-field-*-form.tsx.
+#      Verified: 24 typecheck errors under npm 10.9.7 vs 0 errors under
+#      npm 11.12.1 against an otherwise identical merged tree.
+#
+#      Fix: enable corepack in the base stage so it honors package.json's
+#      packageManager field for all three derived stages (builder,
+#      installer, runner). Corepack is bundled with Node 22+, so this
+#      adds zero new packages — just activates the npm version Documenso
+#      actually tests against.
+#
+#      Fragility: LOW. The line slots into the BASE stage (top of the
+#      Dockerfile), which rarely sees upstream churn. Worst case at sync
+#      time is a 1-line conflict that's trivially resolved.
+#
+#      Long-term: file an upstream PR moving the corepack-enable line into
+#      the Dockerfile itself. Until then, this overlay closes the gap.
+#
+diff --git a/docker/Dockerfile b/docker/Dockerfile
+--- a/docker/Dockerfile
++++ b/docker/Dockerfile
+@@ -5,6 +5,12 @@ FROM node:22-alpine3.22 AS base
+
+ RUN apk add --no-cache openssl
+ RUN apk add --no-cache font-freefont
++
++# MODIFIED for BizRethink overlay 019: enable corepack so the build uses
++# the npm version declared in package.json#packageManager (currently
++# npm@11.11.0). Without this, the base image's npm 10.9.7 ships, and npm
++# 10 vs 11 dedupe/overrides differences flip 24 typecheck errors in the
++# apps/remix editor-field-*-form.tsx files. See overlays/019 for details.
++RUN corepack enable npm
+
+
+ ###########################
