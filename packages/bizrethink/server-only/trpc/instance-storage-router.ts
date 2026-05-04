@@ -3,7 +3,12 @@ import { z } from 'zod';
 import { prisma } from '@documenso/prisma';
 import { adminProcedure, router } from '@documenso/trpc/server/trpc';
 
-import { encryptStorageString, invalidateStorageConfig } from '../instance-storage-config';
+import {
+  encryptStorageString,
+  getInstanceStorageConfig,
+  invalidateStorageConfig,
+} from '../instance-storage-config';
+import { testInstanceStorage } from '../test-instance-storage';
 
 // Phase E (overlay 013 prerequisite): TRPC router for instance storage config.
 // Admin-only: get / update / reset.
@@ -104,4 +109,50 @@ export const instanceStorageRouter = router({
     invalidateStorageConfig();
     return { ok: true as const };
   }),
+
+  // Run a real S3 round-trip (PutObject → GetObject → DeleteObject) against
+  // the credentials in the form. Form values for access key / secret may be
+  // empty (admin wants to test the saved creds) — in that case we fall back
+  // to the decrypted DB row.
+  test: adminProcedure
+    .input(ZUpdateInput)
+    .output(
+      z.discriminatedUnion('ok', [
+        z.object({
+          ok: z.literal(true),
+          details: z.object({
+            bucket: z.string(),
+            endpoint: z.string(),
+            roundTripMs: z.number(),
+          }),
+        }),
+        z.object({
+          ok: z.literal(false),
+          error: z.string(),
+          stage: z.enum(['connect', 'put', 'get', 'delete']),
+        }),
+      ]),
+    )
+    .mutation(async ({ input }) => {
+      let accessKeyId = input.s3AccessKeyId;
+      let secretAccessKey = input.s3SecretAccessKey;
+
+      // If either credential is blank, fall back to the saved (decrypted) value.
+      if (!accessKeyId || !secretAccessKey) {
+        const saved = await getInstanceStorageConfig();
+        if (saved) {
+          if (!accessKeyId) accessKeyId = saved.s3AccessKeyId ?? '';
+          if (!secretAccessKey) secretAccessKey = saved.s3SecretAccessKey ?? '';
+        }
+      }
+
+      return await testInstanceStorage({
+        endpoint: input.s3Endpoint,
+        region: input.s3Region,
+        bucket: input.s3Bucket,
+        forcePathStyle: input.s3ForcePathStyle,
+        accessKeyId,
+        secretAccessKey,
+      });
+    }),
 });

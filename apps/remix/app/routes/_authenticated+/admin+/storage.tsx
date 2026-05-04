@@ -60,6 +60,7 @@ export default function AdminStoragePage() {
   const { data: existing, isLoading } = trpc.bizrethink.instanceStorage.get.useQuery();
   const updateMutation = trpc.bizrethink.instanceStorage.update.useMutation();
   const resetMutation = trpc.bizrethink.instanceStorage.reset.useMutation();
+  const testMutation = trpc.bizrethink.instanceStorage.test.useMutation();
 
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
 
@@ -100,6 +101,30 @@ export default function AdminStoragePage() {
     } catch (err) {
       toast({
         title: t`Failed to save`,
+        description: err instanceof Error ? err.message : t`Unknown error`,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleTest = async () => {
+    try {
+      const result = await testMutation.mutateAsync(form);
+      if (result.ok) {
+        toast({
+          title: t`Storage connection OK`,
+          description: t`PutObject → GetObject → DeleteObject succeeded on bucket "${result.details.bucket}" in ${result.details.roundTripMs} ms.`,
+        });
+      } else {
+        toast({
+          title: t`Storage test failed (stage: ${result.stage})`,
+          description: result.error,
+          variant: 'destructive',
+        });
+      }
+    } catch (err) {
+      toast({
+        title: t`Storage test failed`,
         description: err instanceof Error ? err.message : t`Unknown error`,
         variant: 'destructive',
       });
@@ -296,6 +321,16 @@ export default function AdminStoragePage() {
           <Button onClick={handleSave} loading={updateMutation.isPending}>
             <Trans>Save storage config</Trans>
           </Button>
+          {form.transport === 's3' && (
+            <Button
+              variant="secondary"
+              onClick={handleTest}
+              loading={testMutation.isPending}
+              disabled={!form.s3Bucket}
+            >
+              <Trans>Test connection</Trans>
+            </Button>
+          )}
           {existing && (
             <Button
               variant="destructive"
