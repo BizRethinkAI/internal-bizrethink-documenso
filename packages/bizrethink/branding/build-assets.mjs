@@ -31,6 +31,7 @@ const PUBLIC_DIR = resolve(REPO_ROOT, 'apps', 'remix', 'public');
 const STATIC_DIR = resolve(PUBLIC_DIR, 'static');
 
 const SYMBOL_SVG = resolve(HERE, 'pacta-symbol.svg');
+const FAVICON_SVG = resolve(HERE, 'pacta-favicon.svg');
 const HORIZONTAL_SVG = resolve(HERE, 'pacta-horizontal.svg');
 
 async function renderPng(svgPath, outPath, width, height = width, padding = 0) {
@@ -61,7 +62,7 @@ async function buildFaviconIco(outPath) {
   const sizes = [16, 32, 48];
   const buffers = [];
   for (const s of sizes) {
-    const svg = await fs.readFile(SYMBOL_SVG);
+    const svg = await fs.readFile(FAVICON_SVG);
     const png = await sharp(svg, { density: 600 })
       .resize(s, s, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 0 } })
       .png()
@@ -85,9 +86,10 @@ async function main() {
   await buildFaviconIco(resolve(PUBLIC_DIR, 'favicon.ico'));
   // Browser-tab favicon PNGs — root.tsx specifically references these
   // sizes; without them the browser falls back to whatever stale
-  // upstream PNGs ship in apps/remix/public/.
-  await renderPng(SYMBOL_SVG, resolve(PUBLIC_DIR, 'favicon-16x16.png'), 16);
-  await renderPng(SYMBOL_SVG, resolve(PUBLIC_DIR, 'favicon-32x32.png'), 32);
+  // upstream PNGs ship in apps/remix/public/. Use FAVICON_SVG (gold
+  // tile) so the tab stands out among other dark/grey browser UI.
+  await renderPng(FAVICON_SVG, resolve(PUBLIC_DIR, 'favicon-16x16.png'), 16);
+  await renderPng(FAVICON_SVG, resolve(PUBLIC_DIR, 'favicon-32x32.png'), 32);
   // Apple/Android icons — the new symbol fills its tile (charcoal
   // rounded square), so no extra safe-inset is needed.
   await renderPng(SYMBOL_SVG, resolve(PUBLIC_DIR, 'apple-touch-icon.png'), 180);

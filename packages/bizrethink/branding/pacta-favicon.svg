@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- Pacta favicon — GOLD tile (brand accent as primary color) with
+       a confident charcoal "p" wordmark. Used specifically for the
+       browser-tab favicons (favicon.ico, favicon-16, favicon-32)
+       where standing out in a row of competing tabs matters more
+       than premium-dark-mode polish.
+
+       The larger app icons (apple-touch, android-chrome) use the
+       charcoal-tile pacta-symbol.svg instead — when an icon lives
+       on a phone home screen, premium dark reads better. -->
+  <rect width="256" height="256" rx="56" fill="#d4a574"/>
+  <text
+    x="36"
+    y="206"
+    font-family="Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif"
+    font-weight="900"
+    font-size="252"
+    fill="#1f2937"
+    letter-spacing="-12">p</text>
+  <circle cx="216" cy="180" r="18" fill="#1f2937"/>
+</svg>
