@@ -59,7 +59,7 @@ export const SUBSCRIPTION_CLAIM_FEATURE_FLAGS: Record<
   },
   hidePoweredBy: {
     key: 'hidePoweredBy',
-    label: 'Hide Documenso branding by',
+    label: 'Hide Pacta branding by',
   },
   emailDomains: {
     key: 'emailDomains',

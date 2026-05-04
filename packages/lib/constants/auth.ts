@@ -19,7 +19,7 @@ export const ZNameSchema = z
   });
 
 export const IDENTITY_PROVIDER_NAME: Record<string, string> = {
-  DOCUMENSO: 'Documenso',
+  DOCUMENSO: 'Pacta',
   GOOGLE: 'Google',
   MICROSOFT: 'Microsoft',
   OIDC: 'OIDC',

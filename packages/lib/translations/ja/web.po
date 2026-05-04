@@ -663,8 +663,8 @@ msgid "<0>{organisationName}</0> has requested to create an account on your beha
 msgstr "<0>{organisationName}</0> があなたに代わってアカウントを作成するようリクエストしています。"
 
 #: packages/email/templates/organisation-account-link-confirmation.tsx
-msgid "<0>{organisationName}</0> has requested to link your current Documenso account to their organisation."
-msgstr "<0>{organisationName}</0> が、あなたの現在の Documenso アカウントを自分たちの組織にリンクするようリクエストしています。"
+msgid "<0>{organisationName}</0> has requested to link your current Pacta account to their organisation."
+msgstr "<0>{organisationName}</0> が、あなたの現在の Pacta アカウントを自分たちの組織にリンクするようリクエストしています。"
 
 #: apps/remix/app/components/general/document-signing/document-signing-page-view-v1.tsx
 msgid "<0>{senderName} {senderEmail}</0> has invited you to approve this document"
@@ -703,8 +703,8 @@ msgid "<0>{senderName} {senderEmail}</0> on behalf of \"{0}\" has invited you to
 msgstr "<0>{senderName} {senderEmail}</0> さんが、\"{0}\" を代表してこの文書の閲覧を招待しています。"
 
 #: packages/email/templates/confirm-team-email.tsx
-msgid "<0>{teamName}</0> has requested to use your email address for their team on Documenso."
-msgstr "<0>{teamName}</0> が、Documenso のチーム用メールアドレスとしてあなたのメールアドレスの使用をリクエストしました。"
+msgid "<0>{teamName}</0> has requested to use your email address for their team on Pacta."
+msgstr "<0>{teamName}</0> が、Pacta のチーム用メールアドレスとしてあなたのメールアドレスの使用をリクエストしました。"
 
 #: apps/remix/app/routes/_unauthenticated+/organisation.sso.confirmation.$token.tsx
 msgid "<0>Account management:</0> Modify your account settings, permissions, and preferences"
@@ -966,8 +966,8 @@ msgid "A means to print or download documents for your records"
 msgstr "記録用に文書を印刷またはダウンロードする手段"
 
 #: packages/email/templates/organisation-join.tsx
-msgid "A member has joined your organisation on Documenso"
-msgstr "メンバーが Documenso の組織に参加しました"
+msgid "A member has joined your organisation on Pacta"
+msgstr "メンバーが Pacta の組織に参加しました"
 
 #: packages/lib/jobs/definitions/emails/send-organisation-member-left-email.handler.ts
 msgid "A member has left your organisation"
@@ -978,8 +978,8 @@ msgid "A member has left your organisation {organisationName}"
 msgstr "メンバーが組織 {organisationName} を離れました"
 
 #: packages/email/templates/organisation-leave.tsx
-msgid "A member has left your organisation on Documenso"
-msgstr "メンバーが Documenso の組織を離れました"
+msgid "A member has left your organisation on Pacta"
+msgstr "メンバーが Pacta の組織を離れました"
 
 #: packages/lib/jobs/definitions/emails/send-organisation-member-joined-email.handler.ts
 msgid "A new member has joined your organisation"
@@ -1018,13 +1018,13 @@ msgid "A request has been made to create an account for you"
 msgstr "あなたのためにアカウントを作成するリクエストが行われました"
 
 #: packages/email/templates/organisation-account-link-confirmation.tsx
-msgid "A request has been made to link your Documenso account"
-msgstr "Documenso アカウントをリンクするリクエストが行われました"
+msgid "A request has been made to link your Pacta account"
+msgstr "Pacta アカウントをリンクするリクエストが行われました"
 
 #. placeholder {0}: team.name
 #: packages/lib/server-only/team/create-team-email-verification.ts
-msgid "A request to use your email has been initiated by {0} on Documenso"
-msgstr "Documenso で {0} によって、あなたのメールアドレスを使用するリクエストが開始されました"
+msgid "A request to use your email has been initiated by {0} on Pacta"
+msgstr "Pacta で {0} によって、あなたのメールアドレスを使用するリクエストが開始されました"
 
 #: apps/remix/app/components/dialogs/webhook-create-dialog.tsx
 #: apps/remix/app/components/dialogs/webhook-edit-dialog.tsx
@@ -1076,12 +1076,12 @@ msgid "Accept & Link Account"
 msgstr "アカウントを承認してリンク"
 
 #: packages/email/templates/organisation-invite.tsx
-msgid "Accept invitation to join an organisation on Documenso"
-msgstr "Documenso の組織参加招待を承諾"
+msgid "Accept invitation to join an organisation on Pacta"
+msgstr "Pacta の組織参加招待を承諾"
 
 #: packages/email/templates/confirm-team-email.tsx
-msgid "Accept team email request for {teamName} on Documenso"
-msgstr "Documenso 上の {teamName} のチームメールリクエストを承認"
+msgid "Accept team email request for {teamName} on Pacta"
+msgstr "Pacta 上の {teamName} のチームメールリクエストを承認"
 
 #: apps/remix/app/routes/_unauthenticated+/articles.signature-disclosure.tsx
 msgid "Acceptance and Consent"
@@ -3989,8 +3989,8 @@ msgid "DNS Records"
 msgstr "DNS レコード"
 
 #: apps/remix/app/components/general/admin-license-card.tsx
-msgid "Documenso License"
-msgstr "Documenso ライセンス"
+msgid "Pacta License"
+msgstr "Pacta ライセンス"
 
 #: apps/remix/app/components/general/settings-nav-desktop.tsx
 #: apps/remix/app/components/general/template/template-page-view-documents-table.tsx
@@ -6327,8 +6327,8 @@ msgid "Japanese"
 msgstr "日本語"
 
 #: packages/email/templates/organisation-invite.tsx
-msgid "Join {organisationName} on Documenso"
-msgstr "{organisationName} に Documenso で参加"
+msgid "Join {organisationName} on Pacta"
+msgstr "{organisationName} に Pacta で参加"
 
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl.support.tsx
 msgid "Join our community on <0>Discord</0> for community support and discussion."
@@ -6523,8 +6523,8 @@ msgid "Link template"
 msgstr "テンプレートをリンク"
 
 #: packages/email/templates/organisation-account-link-confirmation.tsx
-msgid "Link your Documenso account"
-msgstr "Documenso アカウントをリンクする"
+msgid "Link your Pacta account"
+msgstr "Pacta アカウントをリンクする"
 
 #: apps/remix/app/routes/_authenticated+/settings+/security._index.tsx
 #: apps/remix/app/routes/_authenticated+/settings+/security.linked-accounts.tsx
@@ -10326,8 +10326,8 @@ msgstr "チーム"
 
 #. placeholder {0}: team.name
 #: packages/lib/server-only/team/delete-team.ts
-msgid "Team \"{0}\" has been deleted on Documenso"
-msgstr "Documenso にてチーム「{0}」が削除されました"
+msgid "Team \"{0}\" has been deleted on Pacta"
+msgstr "Pacta にてチーム「{0}」が削除されました"
 
 #: packages/lib/constants/teams-translations.ts
 msgid "Team Admin"
@@ -10378,8 +10378,8 @@ msgid "Team email removed"
 msgstr "チームメールが削除されました"
 
 #: packages/email/templates/team-email-removed.tsx
-msgid "Team email removed for {teamName} on Documenso"
-msgstr "Documenso にて {teamName} のチームメールが削除されました"
+msgid "Team email removed for {teamName} on Pacta"
+msgstr "Pacta にて {teamName} のチームメールが削除されました"
 
 #: apps/remix/app/routes/_unauthenticated+/team.verify.email.$token.tsx
 msgid "Team email verification"
@@ -13006,8 +13006,8 @@ msgid "Welcome to {organisationName}"
 msgstr "{organisationName} へようこそ"
 
 #: packages/email/template-components/template-confirmation-email.tsx
-msgid "Welcome to Documenso!"
-msgstr "Documenso へようこそ！"
+msgid "Welcome to Pacta!"
+msgstr "Pacta へようこそ！"
 
 #: apps/remix/app/routes/_authenticated+/admin+/sso-providers.tsx
 msgid "Well-known URL"
@@ -13329,8 +13329,8 @@ msgid "You can only detect fields in draft envelopes"
 msgstr "ドラフトの封筒でのみフィールドを検出できます"
 
 #: packages/email/templates/confirm-team-email.tsx
-msgid "You can revoke access at any time in your team settings on Documenso <0>here</0>."
-msgstr "Documenso のチーム設定から、いつでもアクセス権を取り消すことができます。<0>こちら</0>。"
+msgid "You can revoke access at any time in your team settings on Pacta <0>here</0>."
+msgstr "Pacta のチーム設定から、いつでもアクセス権を取り消すことができます。<0>こちら</0>。"
 
 #: apps/remix/app/components/forms/public-profile-form.tsx
 msgid "You can update the profile URL by updating the team URL in the general settings page."
@@ -13474,8 +13474,8 @@ msgstr "<0>{0}</0> から組織への参加を招待されています。"
 
 #. placeholder {0}: organisation.name
 #: packages/lib/server-only/organisation/create-organisation-member-invites.ts
-msgid "You have been invited to join {0} on Documenso"
-msgstr "Documenso で {0} に参加するよう招待されています"
+msgid "You have been invited to join {0} on Pacta"
+msgstr "Pacta で {0} に参加するよう招待されています"
 
 #: packages/email/templates/organisation-invite.tsx
 msgid "You have been invited to join the following organisation"
@@ -14102,8 +14102,8 @@ msgid "Your plan does not support inviting members. Please upgrade or your plan 
 msgstr "現在のプランではメンバーの招待はサポートされていません。プランのアップグレード、またはご相談をご希望の場合は <0>{SUPPORT_EMAIL}</0> まで営業担当へお問い合わせください。"
 
 #: apps/remix/app/components/general/organisations/organisation-billing-banner.tsx
-msgid "Your plan is no longer valid. Please subscribe to a new plan to continue using Documenso."
-msgstr "現在のプランは無効です。Documenso を引き続き利用するには、新しいプランを契約してください。"
+msgid "Your plan is no longer valid. Please subscribe to a new plan to continue using Pacta."
+msgstr "現在のプランは無効です。Pacta を引き続き利用するには、新しいプランを契約してください。"
 
 #: apps/remix/app/components/forms/profile.tsx
 msgid "Your profile has been updated successfully."
