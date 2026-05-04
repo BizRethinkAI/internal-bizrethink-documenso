@@ -1,10 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
-  <!-- Pacta favicon / app-icon symbol — heavy lowercase "p" + signature gold dot.
-       Matches the wordmark-led brand direction. Used by build-assets.mjs to
-       render favicon.ico, apple-touch-icon, android-chrome variants. -->
-  <path
-    d="M 50 35 L 80 35 A 35 35 0 0 1 80 105 L 80 165 L 50 165 Z M 80 50 A 18 18 0 0 1 80 90 Z"
-    fill="#1f2937"
-    fill-rule="evenodd"/>
-  <circle cx="135" cy="100" r="11" fill="#d4a574"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- Pacta favicon / app-icon symbol — charcoal rounded tile with a
+       confident lowercase "p" wordmark and the signature gold dot.
+       Tile fills canvas for maximum legibility at favicon sizes
+       (16/32/48px). Used by build-assets.mjs to render favicon.ico,
+       favicon-16x16.png, favicon-32x32.png, apple-touch-icon, and
+       android-chrome variants. -->
+  <rect width="256" height="256" rx="56" fill="#1f2937"/>
+  <text
+    x="44"
+    y="200"
+    font-family="Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif"
+    font-weight="900"
+    font-size="232"
+    fill="#fafafa"
+    letter-spacing="-12">p</text>
+  <circle cx="208" cy="174" r="18" fill="#d4a574"/>
 </svg>
