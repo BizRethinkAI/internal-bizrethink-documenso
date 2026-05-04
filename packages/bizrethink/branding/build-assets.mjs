@@ -23,7 +23,14 @@ import { promises as fs } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import toIco from 'to-ico';
+
+// Note: previously used `to-ico` to generate `favicon.ico`. Removed in
+// overlay 030 — that package pulled in deprecated `request@2.88.2` which
+// triggered Dependabot CVEs (tough-cookie, request SSRF). Modern browsers
+// support `favicon.svg` + multi-size PNG; .ico is only needed for legacy
+// IE/old-Edge which Pacta doesn't target. The `<link rel="icon">` head
+// references in apps/remix/app/root.tsx point at favicon-16x16.png and
+// favicon-32x32.png, both still generated below.
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, '..', '..', '..');
@@ -58,22 +65,6 @@ async function renderPng(svgPath, outPath, width, height = width, padding = 0) {
   console.log(`  ✓ ${outPath.replace(REPO_ROOT + '/', '')} (${width}×${height})`);
 }
 
-async function buildFaviconIco(outPath) {
-  const sizes = [16, 32, 48];
-  const buffers = [];
-  for (const s of sizes) {
-    const svg = await fs.readFile(FAVICON_SVG);
-    const png = await sharp(svg, { density: 600 })
-      .resize(s, s, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 0 } })
-      .png()
-      .toBuffer();
-    buffers.push(png);
-  }
-  const ico = await toIco(buffers);
-  await fs.writeFile(outPath, ico);
-  console.log(`  ✓ ${outPath.replace(REPO_ROOT + '/', '')} (multi-res ${sizes.join('/')})`);
-}
-
 async function ensureDir(dir) {
   await fs.mkdir(dir, { recursive: true });
 }
@@ -83,7 +74,6 @@ async function main() {
   await ensureDir(STATIC_DIR);
 
   console.log('Symbol-based outputs:');
-  await buildFaviconIco(resolve(PUBLIC_DIR, 'favicon.ico'));
   // Browser-tab favicon PNGs — root.tsx specifically references these
   // sizes; without them the browser falls back to whatever stale
   // upstream PNGs ship in apps/remix/public/. Use FAVICON_SVG (gold
