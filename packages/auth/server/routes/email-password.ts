@@ -1,3 +1,7 @@
+// MODIFIED for BizRethink (overlay 028): use DB-aware isSignupDisabled in
+// the POST /signup handler so the admin Signup-gating UI override actually
+// works at form-submit time. Original used raw env() and ignored the DB row.
+import { isSignupDisabled } from '@bizrethink/customizations/server-only/signup-config';
 import { sValidator } from '@hono/standard-validator';
 import { compare } from '@node-rs/bcrypt';
 import { UserSecurityAuditLogType } from '@prisma/client';
@@ -35,7 +39,6 @@ import { deletedServiceAccountEmail } from '@documenso/lib/server-only/user/serv
 import { legacyServiceAccountEmail } from '@documenso/lib/server-only/user/service-accounts/legacy-service-account';
 import { updatePassword } from '@documenso/lib/server-only/user/update-password';
 import { verifyEmail } from '@documenso/lib/server-only/user/verify-email';
-import { env } from '@documenso/lib/utils/env';
 import { prisma } from '@documenso/prisma';
 
 import { AuthenticationErrorCode } from '../lib/errors/error-codes';
@@ -188,7 +191,10 @@ export const emailPasswordRoute = new Hono<HonoAuthContext>()
   .post('/signup', sValidator('json', ZSignUpSchema), async (c) => {
     const requestMetadata = c.get('requestMetadata');
 
-    if (env('NEXT_PUBLIC_DISABLE_SIGNUP') === 'true') {
+    // MODIFIED for BizRethink (overlay 028): DB-aware. Layer 1 (signup page
+    // loader) already uses isSignupDisabled(); this matches it so the admin
+    // UI's Signup-gating override applies end-to-end (form submit too).
+    if (await isSignupDisabled()) {
       throw new AppError(AuthenticationErrorCode.SignupDisabled, {
         statusCode: 400,
       });
