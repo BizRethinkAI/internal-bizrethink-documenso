@@ -24,8 +24,15 @@
 import * as Sentry from '@sentry/node';
 
 const dsn = process.env.NEXT_PRIVATE_SENTRY_DSN;
+const nodeEnv = process.env.NODE_ENV;
 
-if (dsn && process.env.NODE_ENV === 'production') {
+// Deny-list pattern: capture in production OR when NODE_ENV is unset
+// (Documenso's docker image doesn't set NODE_ENV at runtime; the
+// react-router build sets it only during compilation). Skip explicitly
+// on development/test where Sentry events would be noise.
+const shouldEnable = dsn && nodeEnv !== 'development' && nodeEnv !== 'test';
+
+if (shouldEnable) {
   Sentry.init({
     dsn,
 
