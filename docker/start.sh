@@ -28,4 +28,9 @@ printf "🗄️  Running database migrations...\n"
 npx prisma migrate deploy --schema ../../packages/prisma/schema.prisma
 
 printf "🌟 Starting Documenso server...\n"
-HOSTNAME=0.0.0.0 node build/server/main.js
+# MODIFIED for BizRethink (overlay 033): --import loads Sentry
+# instrumentation BEFORE main.js is evaluated, ensuring Sentry can hook
+# Node's HTTP/exception handlers before other modules load them. Init
+# is a no-op unless NEXT_PRIVATE_SENTRY_DSN is set, so this is harmless
+# on fresh installs without Sentry configured.
+HOSTNAME=0.0.0.0 node --import ./build/server/instrument.mjs build/server/main.js
