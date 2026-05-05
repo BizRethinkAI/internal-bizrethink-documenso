@@ -1,10 +1,10 @@
-// MODIFIED for BizRethink (overlay 032): import the BizRethink-namespaced
-// config getter so the middleware can apply HSTS + Permissions-Policy and
-// globalize nosniff/Referrer based on the admin-UI-controlled site setting.
-import {
-  buildHstsValue,
-  getSecurityHeadersConfig,
-} from '@bizrethink/customizations/server-only/security-headers-config';
+// MODIFIED for BizRethink (overlay 032): the BizRethink-namespaced config
+// getter is dynamic-imported from inside the middleware (see below) rather
+// than statically imported here. Static imports are evaluated at config-
+// load time by `react-router typegen`, which uses Node ESM with strict
+// resolution and chokes on the bizrethink package's extensionless
+// internal imports. Dynamic import defers resolution to actual request
+// handling, by which point the runtime is bundler-resolved.
 import { createMiddleware } from 'hono/factory';
 
 import type { HonoEnv } from './router';
@@ -186,6 +186,11 @@ export const securityHeadersMiddleware = createMiddleware<HonoEnv>(async (c, nex
   if (!c.res.headers.has('X-Content-Type-Options')) {
     c.res.headers.set('X-Content-Type-Options', 'nosniff');
   }
+
+  // MODIFIED for BizRethink (overlay 032): dynamic-import to defer module
+  // resolution to runtime (see static-import comment at the top of file).
+  const { getSecurityHeadersConfig, buildHstsValue } =
+    await import('@bizrethink/customizations/server-only/security-headers-config');
 
   const extra = await getSecurityHeadersConfig();
 
