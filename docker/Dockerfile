@@ -148,4 +148,14 @@ COPY --chown=nodejs:nodejs ./docker/start.sh /app/apps/remix/start.sh
 
 WORKDIR /app/apps/remix
 
+# MODIFIED for BizRethink overlay 031: container-level health check.
+# Hits /api/health which probes DB connectivity + cert status. Returns
+# 500 if DB unreachable; 200 otherwise (cert missing is "warning",
+# acceptable on fresh installs). Targets 127.0.0.1 explicitly because
+# busybox wget on Alpine can prefer IPv6 from 'localhost' but the
+# Node server binds 0.0.0.0 (IPv4 only). 60s start period covers
+# prisma migrate deploy + Remix boot. See overlays/031 for details.
+HEALTHCHECK --start-period=60s --interval=30s --timeout=10s --retries=3 \
+  CMD wget --spider --quiet http://127.0.0.1:3000/api/health || exit 1
+
 CMD ["sh", "start.sh"]

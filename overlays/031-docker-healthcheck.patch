@@ -1,0 +1,74 @@
+# Why: Documenso ships with no Docker HEALTHCHECK directive. Coolify's
+#      auto-restart logic only fires on container exit (process crash);
+#      it can't detect a hung process where Node is alive but the app
+#      stopped serving requests (DB connection lost, event loop blocked,
+#      etc.). Without a healthcheck, a soft-failed container stays
+#      "running" indefinitely with no traffic served.
+#
+#      The app already exposes `/api/health` at apps/remix/app/routes/
+#      api+/health.ts which:
+#        - issues `SELECT 1` against the configured DB
+#        - calls `getCertificateStatus()` (warning if cert missing,
+#          which is fine — we want startup to succeed when the operator
+#          hasn't uploaded a cert yet)
+#        - returns 500 only if DB is unreachable OR cert check throws
+#        - returns 200 on ok / warning
+#
+#      That semantic is exactly right for a HEALTHCHECK: 500 → mark
+#      unhealthy → Coolify restarts the container.
+#
+#      Timing rationale:
+#        --start-period=60s : the app needs 10-30s after the container
+#          starts to: run prisma migrate deploy, boot the Remix server,
+#          warm the connection pool. 60s gives a 2x safety margin on
+#          worst-case migration runs (we have 160 migrations as of
+#          2026-05-04). During the start period, healthcheck failures
+#          are NOT counted against retries — Coolify won't bounce
+#          a still-booting container.
+#        --interval=30s : every 30s after start period elapses. Each
+#          check costs one `SELECT 1` and one stat() call, ~ms-level.
+#          30s is the Docker default; smaller values would burn DB
+#          round-trips with no real signal benefit.
+#        --timeout=10s : if a check takes >10s, mark this attempt
+#          failed. The local DB check should complete in <100ms; 10s
+#          is generous enough to absorb Coolify-host disk pressure
+#          during backup windows without false positives.
+#        --retries=3 : need 3 consecutive failures (~90s) before
+#          marking unhealthy. Tolerates transient network blips.
+#
+#      Implementation note: targets `127.0.0.1:3000` explicitly (NOT
+#      `localhost`). Alpine's busybox wget resolves `localhost` via
+#      `getaddrinfo`, which on dual-stack containers can prefer IPv6;
+#      our Node server is bound to `HOSTNAME=0.0.0.0` (IPv4 only —
+#      see docker/start.sh:31). Hard-coding the IPv4 loopback
+#      sidesteps a previously-seen "Connection refused" failure mode.
+#
+#      Fragility: LOW. Only modifies the runner stage; doesn't touch
+#      builder/installer. Upstream rarely changes the runner stage
+#      below the CMD line, so worst-case at sync time is a 1-2 line
+#      conflict. The HEALTHCHECK directive is independent of every
+#      other line in the file.
+#
+#      Long-term: file an upstream PR adding HEALTHCHECK. Documenso's
+#      docker/start.sh already prints `🏥 Health check: http://localhost:3000/api/health`
+#      to operators, so the endpoint is clearly intended as the
+#      canonical health surface.
+#
+diff --git a/docker/Dockerfile b/docker/Dockerfile
+--- a/docker/Dockerfile
++++ b/docker/Dockerfile
+@@ -148,4 +148,18 @@ COPY --chown=nodejs:nodejs ./docker/start.sh /app/apps/remix/start.sh
+
+ WORKDIR /app/apps/remix
+
++# MODIFIED for BizRethink overlay 031: container-level health check.
++# Hits /api/health which probes DB connectivity + cert status. Returns
++# 500 if DB unreachable; 200 otherwise (cert missing is "warning",
++# acceptable on fresh installs). Targets 127.0.0.1 explicitly because
++# busybox wget on Alpine can prefer IPv6 from 'localhost' but the
++# Node server binds 0.0.0.0 (IPv4 only). 60s start period covers
++# prisma migrate deploy + Remix boot. See overlays/031 for details.
++HEALTHCHECK --start-period=60s --interval=30s --timeout=10s --retries=3 \
++  CMD wget --spider --quiet http://127.0.0.1:3000/api/health || exit 1
++
+ CMD ["sh", "start.sh"]
