@@ -1,0 +1,72 @@
+# Why: Documenso (Remix + Hono) ships with no server-side error tracking.
+#      Errors that happen on the server are logged to stdout (now also
+#      to Axiom via overlay's log drain) but there's no error-aggregation
+#      surface — no grouping, no alerts, no stack traces with source maps,
+#      no per-error trend.
+#
+#      Browser-side errors are already captured by PostHog (see
+#      apps/remix/app/entry.client.tsx:24 — `capture_exceptions: true`).
+#      The gap is purely server-side.
+#
+#      Solution: add `@sentry/node` and initialize it as the very first
+#      module loaded by the server entry point (main.js). Sentry's docs
+#      require this ordering — the SDK hooks Node's process-level
+#      exception/rejection handlers and the HTTP module, which only
+#      works if no other modules have loaded those first.
+#
+#      Sibling product CircularPay already uses Sentry (@sentry/nextjs
+#      ^10.48.0) so adding @sentry/node ^10.48.0 to Pacta means both
+#      products share an SDK major version, which simplifies stack-trace
+#      symbolication and any shared utilities later.
+#
+#      Files added:
+#        - apps/remix/server/instrument.mjs
+#          Sentry init module. Side-effect-only — exports nothing. Init
+#          runs only when NEXT_PRIVATE_SENTRY_DSN is set AND
+#          NODE_ENV=production. Includes a `beforeSend` PII scrubber
+#          that strips query strings (signing tokens), cookies, and
+#          authorization headers — critical for fintech hygiene.
+#
+#      Files patched:
+#        - apps/remix/server/main.js
+#          Adds `import './instrument.mjs'` as the first import so the
+#          SDK initializes before any other module loads.
+#        - apps/remix/.bin/build.sh
+#          Adds `cp server/instrument.mjs build/server/instrument.mjs`
+#          so the file lands next to main.js in the production build.
+#          Same verbatim-copy pattern as main.js (no compilation).
+#        - apps/remix/package.json
+#          Adds `"@sentry/node": "^10.48.0"` to dependencies.
+#
+#      No client-side Sentry: PostHog already captures browser errors
+#      via `capture_exceptions: true`. Adding @sentry/react would
+#      double-capture and bloat the client bundle. Defer until/unless
+#      we want full session-replay capability (which we explicitly
+#      decided against — Pacta's audit trail is the primary forensic
+#      record).
+#
+#      Operator config (manual, post-deploy):
+#        1. Sentry UI → create project `pacta-platform`, platform: Node.js
+#        2. Copy DSN
+#        3. Coolify → Pacta backend → Environment Variables → add
+#           NEXT_PRIVATE_SENTRY_DSN=<paste>
+#        4. Restart container (env var only — no rebuild needed)
+#        5. Verify: trigger a test error, observe in Sentry within 30s
+#
+#      Source maps: not uploaded. Stack traces will show minified names.
+#      Future v2: add SENTRY_AUTH_TOKEN env var + sentry-cli upload step
+#      in build.sh for readable traces. Same trade-off CircularPay made
+#      (see ~/github/bizrethink/client-circular-payments-platform/
+#      next.config.mjs — `sourcemaps: { disable: true }`).
+#
+#      Fragility:
+#        LOW for instrument.mjs and build.sh — new file + one-line append.
+#        LOW for main.js — single import added at the top, comment makes
+#        the ordering requirement obvious for future-me.
+#        LOW for package.json — additive dep, no removals.
+#
+#      Long-term: file an upstream Documenso issue suggesting they add
+#      opt-in Sentry support via env var (DOCUMENSO_SENTRY_DSN). Self-
+#      hosters running fintech/healthcare/regulated apps universally
+#      need this; baking it in saves every operator from re-implementing
+#      this overlay.

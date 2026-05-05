@@ -28,6 +28,12 @@ npm run build:server
 # Copy over the entry point for the server.
 cp server/main.js build/server/main.js
 
+# MODIFIED for BizRethink (overlay 033): copy Sentry instrumentation
+# alongside main.js. main.js does `import './instrument.mjs'` as its first
+# line, so the file must exist next to it in the build output. Same
+# verbatim-copy pattern as main.js (no compilation needed).
+cp server/instrument.mjs build/server/instrument.mjs
+
 # Copy over all web.js translations
 cp -r ../../packages/lib/translations build/server/hono/packages/lib/translations
 
