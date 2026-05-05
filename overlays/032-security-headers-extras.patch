@@ -1,0 +1,71 @@
+# Why: Documenso ships a sophisticated CSP middleware
+#      (apps/remix/server/security-headers.ts) with per-request nonces,
+#      strict `script-src 'strict-dynamic'`, and path-aware `frame-ancestors`
+#      (the modern replacement for X-Frame-Options). What it does NOT ship:
+#
+#        - Strict-Transport-Security (HSTS)
+#        - Permissions-Policy
+#        - Globalized X-Content-Type-Options + Referrer-Policy
+#          (upstream sets these only on /embed routes)
+#
+#      The reason upstream skips them is reasonable: HSTS in particular
+#      is operator-specific (depends on cert chain, subdomain layout, and
+#      preload-list submission). What ships universally for one self-host
+#      may break another.
+#
+#      Solution: a BizRethink-namespaced site-setting (id="site.security-
+#      headers") with an admin-UI panel under Site Settings. Operator
+#      toggles HSTS on after they've verified their cert and subdomain
+#      layout; Permissions-Policy is on by default (sane denylist that
+#      a contract-signing app never legitimately needs); nosniff and
+#      Referrer-Policy are globalized unconditionally (they have no
+#      downside on any path).
+#
+#      Files added (no patches needed):
+#        - packages/bizrethink/server-only/site-settings/schemas/security-headers.ts
+#          (Zod schema for the site-setting row)
+#        - packages/bizrethink/server-only/security-headers-config.ts
+#          (DB getter with 60s in-memory cache + invalidate hook)
+#
+#      Files patched:
+#        - apps/remix/server/security-headers.ts
+#          Imports the BizRethink config getter; after upstream's CSP block,
+#          unconditionally sets nosniff + Referrer-Policy on all page
+#          paths, then conditionally adds HSTS + Permissions-Policy from
+#          the DB row.
+#        - packages/lib/server-only/site-settings/schema.ts
+#          Adds ZSiteSettingsSecurityHeadersSchema to the union (already
+#          an overlay-modified file from overlay 015).
+#        - packages/lib/server-only/site-settings/upsert-site-setting.ts
+#          Calls invalidateSecurityHeadersConfig() when the security-
+#          headers row is upserted, so admin UI saves take effect on
+#          next request without a process restart.
+#        - apps/remix/app/routes/_authenticated+/admin+/site-settings.tsx
+#          New form section under existing site-settings page with
+#          Switch/number/text inputs for all options. Mirrors webhook
+#          and captcha sections from overlays 015/017.
+#
+#      Companion change in the marketing site repo
+#      (internal-bizrethink-pacta-web): nginx.conf hardcodes the same
+#      headers. Static site has no admin UI by design — operator
+#      preferences are not relevant for a stateless Astro export.
+#
+#      Fragility:
+#        LOW for the schema/config-getter additions (new files in our
+#        package).
+#        LOW for the `security-headers.ts` patch — only appends after
+#        upstream's existing logic; doesn't modify the CSP-building code.
+#        MEDIUM for the `upsert-site-setting.ts` patch — touches a
+#        critical write path that all site-settings flow through. The
+#        added cache-invalidate is dynamic-imported in a try/catch so
+#        a bizrethink import failure can't break upstream upserts.
+#        MEDIUM for the site-settings.tsx admin UI — large file, lots
+#        of overlay history. Diff is purely additive (new section at
+#        the bottom).
+#
+#      Long-term: file an upstream issue suggesting Documenso ship HSTS
+#      and Permissions-Policy as opt-in env vars
+#      (DOCUMENSO_HSTS_MAX_AGE, DOCUMENSO_PERMISSIONS_POLICY). Self-hosters
+#      who don't want the admin-UI complexity could just set the env vars
+#      and skip the DB row entirely. Until upstream agrees, this overlay
+#      gives us full control via the existing site-settings pattern.

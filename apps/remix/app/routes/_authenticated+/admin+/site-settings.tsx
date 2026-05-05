@@ -3,6 +3,11 @@ import {
   SITE_SETTINGS_CAPTCHA_ID,
   ZSiteSettingsCaptchaSchema,
 } from '@bizrethink/customizations/server-only/site-settings/schemas/captcha';
+// ADDED for BizRethink (overlay 032): security-headers section schema.
+import {
+  SITE_SETTINGS_SECURITY_HEADERS_ID,
+  ZSiteSettingsSecurityHeadersSchema,
+} from '@bizrethink/customizations/server-only/site-settings/schemas/security-headers';
 // ADDED for BizRethink (overlay 012): signup section schema lives in our package.
 import {
   SITE_SETTINGS_SIGNUP_ID,
@@ -62,18 +67,23 @@ type TCaptchaFormSchema = z.infer<typeof ZCaptchaFormSchema>;
 const ZWebhookFormSchema = ZSiteSettingsWebhookSchema;
 type TWebhookFormSchema = z.infer<typeof ZWebhookFormSchema>;
 
+// ADDED for BizRethink (overlay 032): security-headers section.
+const ZSecurityHeadersFormSchema = ZSiteSettingsSecurityHeadersSchema;
+type TSecurityHeadersFormSchema = z.infer<typeof ZSecurityHeadersFormSchema>;
+
 export async function loader() {
   const all = await getSiteSettings();
   const banner = all.find((setting) => setting.id === SITE_SETTINGS_BANNER_ID);
   const signup = all.find((setting) => setting.id === SITE_SETTINGS_SIGNUP_ID);
   const captcha = all.find((setting) => setting.id === SITE_SETTINGS_CAPTCHA_ID);
   const webhook = all.find((setting) => setting.id === SITE_SETTINGS_WEBHOOK_ID);
+  const securityHeaders = all.find((setting) => setting.id === SITE_SETTINGS_SECURITY_HEADERS_ID);
 
-  return { banner, signup, captcha, webhook };
+  return { banner, signup, captcha, webhook, securityHeaders };
 }
 
 export default function AdminBannerPage({ loaderData }: Route.ComponentProps) {
-  const { banner, signup, captcha, webhook } = loaderData;
+  const { banner, signup, captcha, webhook, securityHeaders } = loaderData;
 
   const { toast } = useToast();
   const { _ } = useLingui();
@@ -130,6 +140,29 @@ export default function AdminBannerPage({ loaderData }: Route.ComponentProps) {
     },
   });
 
+  // ADDED for BizRethink (overlay 032): security-headers form.
+  const securityHeadersForm = useForm<TSecurityHeadersFormSchema>({
+    resolver: zodResolver(ZSecurityHeadersFormSchema),
+    defaultValues: {
+      id: SITE_SETTINGS_SECURITY_HEADERS_ID,
+      enabled: securityHeaders?.enabled ?? true,
+      data: {
+        hsts: {
+          enabled: securityHeaders?.data?.hsts?.enabled ?? false,
+          maxAgeSeconds: securityHeaders?.data?.hsts?.maxAgeSeconds ?? 31536000,
+          includeSubdomains: securityHeaders?.data?.hsts?.includeSubdomains ?? false,
+          preload: securityHeaders?.data?.hsts?.preload ?? false,
+        },
+        permissionsPolicy: {
+          enabled: securityHeaders?.data?.permissionsPolicy?.enabled ?? true,
+          value:
+            securityHeaders?.data?.permissionsPolicy?.value ??
+            'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+        },
+      },
+    },
+  });
+
   const enabled = form.watch('enabled');
 
   const { mutateAsync: updateSiteSetting, isPending: isUpdateSiteSettingLoading } =
@@ -173,7 +206,7 @@ export default function AdminBannerPage({ loaderData }: Route.ComponentProps) {
           <h2 className="font-semibold">
             <Trans>Site Banner</Trans>
           </h2>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="text-muted-foreground mt-2 text-sm">
             <Trans>
               The site banner is a message that is shown at the top of the site. It can be used to
               display important information to your users.
@@ -291,7 +324,7 @@ export default function AdminBannerPage({ loaderData }: Route.ComponentProps) {
           <h2 className="font-semibold">
             <Trans>Signup gating</Trans>
           </h2>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="text-muted-foreground mt-2 text-sm">
             <Trans>
               Disable signup entirely or restrict it to a list of email domains. This DB-backed
               setting overrides NEXT_PUBLIC_DISABLE_SIGNUP and NEXT_PRIVATE_ALLOWED_SIGNUP_DOMAINS.
@@ -409,7 +442,7 @@ export default function AdminBannerPage({ loaderData }: Route.ComponentProps) {
           <h2 className="font-semibold">
             <Trans>Captcha (Cloudflare Turnstile)</Trans>
           </h2>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="text-muted-foreground mt-2 text-sm">
             <Trans>
               When enabled, signin and signup forms render a Turnstile widget. DB-backed config
               overrides NEXT_PUBLIC_TURNSTILE_SITE_KEY and NEXT_PRIVATE_TURNSTILE_SECRET_KEY.
@@ -515,7 +548,7 @@ export default function AdminBannerPage({ loaderData }: Route.ComponentProps) {
           <h2 className="font-semibold">
             <Trans>Webhook SSRF bypass hosts</Trans>
           </h2>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="text-muted-foreground mt-2 text-sm">
             <Trans>
               Hostnames listed here are allowed to resolve to private/loopback addresses for
               outbound webhook delivery. Useful for hitting Docker-internal services. Merged with
@@ -601,6 +634,244 @@ export default function AdminBannerPage({ loaderData }: Route.ComponentProps) {
                 className="mt-4 justify-end self-end"
               >
                 <Trans>Update webhook config</Trans>
+              </Button>
+            </form>
+          </Form>
+        </div>
+
+        {/* ADDED for BizRethink (overlay 032): security-headers section. */}
+        <div className="mt-12">
+          <h2 className="font-semibold">
+            <Trans>Security Headers</Trans>
+          </h2>
+
+          <p className="text-muted-foreground mt-2 text-sm">
+            <Trans>
+              HTTP response headers added to every page. Documenso already ships a strict CSP with
+              per-request nonces — these settings cover the headers it doesn't ship by default
+              (HSTS, Permissions-Policy) plus globalize Referrer-Policy and X-Content-Type-Options
+              across all routes (upstream sets them only on /embed).
+            </Trans>
+          </p>
+
+          <Form {...securityHeadersForm}>
+            <form
+              className="mt-4 flex flex-col"
+              onSubmit={securityHeadersForm.handleSubmit(async ({ id, enabled, data }) => {
+                try {
+                  await updateSiteSetting({ id, enabled, data });
+
+                  toast({
+                    title: _(msg`Security headers updated`),
+                    description: _(msg`Headers will apply to new responses. No restart required.`),
+                    duration: 5000,
+                  });
+
+                  await revalidate();
+                } catch (err) {
+                  toast({
+                    title: _(msg`Failed to update security headers`),
+                    description:
+                      err instanceof Error ? err.message : _(msg`Please try again later.`),
+                    variant: 'destructive',
+                  });
+                }
+              })}
+            >
+              <FormField
+                control={securityHeadersForm.control}
+                name="enabled"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      <Trans>Enabled</Trans>
+                    </FormLabel>
+                    <FormControl>
+                      <div>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </div>
+                    </FormControl>
+                    <FormDescription>
+                      <Trans>
+                        Master toggle. When off, Documenso's default CSP middleware still runs but
+                        no extra BizRethink headers are added.
+                      </Trans>
+                    </FormDescription>
+                  </FormItem>
+                )}
+              />
+
+              <div className="border-border mt-6 rounded-lg border p-4">
+                <h3 className="text-sm font-semibold">
+                  <Trans>Strict-Transport-Security (HSTS)</Trans>
+                </h3>
+
+                <p className="text-muted-foreground mt-1 text-xs">
+                  <Trans>
+                    Tells browsers to only load this domain over HTTPS for the configured duration.
+                    Enable AFTER verifying every subdomain you serve is HTTPS-only, otherwise
+                    includeSubdomains can break HTTP-only siblings.
+                  </Trans>
+                </p>
+
+                <div className="mt-4 space-y-4">
+                  <FormField
+                    control={securityHeadersForm.control}
+                    name="data.hsts.enabled"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          <Trans>Send HSTS header</Trans>
+                        </FormLabel>
+                        <FormControl>
+                          <div>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                          </div>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={securityHeadersForm.control}
+                    name="data.hsts.maxAgeSeconds"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          <Trans>max-age (seconds)</Trans>
+                        </FormLabel>
+                        <FormControl>
+                          <input
+                            type="number"
+                            className="border-input bg-background h-10 w-full rounded-md border px-3 text-sm"
+                            value={field.value}
+                            onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 0)}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          <Trans>
+                            31536000 = 1 year (recommended once verified). Lower values let you back
+                            out faster if something breaks.
+                          </Trans>
+                        </FormDescription>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={securityHeadersForm.control}
+                    name="data.hsts.includeSubdomains"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          <Trans>includeSubDomains</Trans>
+                        </FormLabel>
+                        <FormControl>
+                          <div>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                          </div>
+                        </FormControl>
+                        <FormDescription>
+                          <Trans>
+                            Forces HTTPS on every subdomain of this host. Only enable after
+                            confirming all *.your-domain are HTTPS-only.
+                          </Trans>
+                        </FormDescription>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={securityHeadersForm.control}
+                    name="data.hsts.preload"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          <Trans>preload</Trans>
+                        </FormLabel>
+                        <FormControl>
+                          <div>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                          </div>
+                        </FormControl>
+                        <FormDescription>
+                          <Trans>
+                            Marks the domain as eligible for the browser-vendor HSTS preload list.
+                            Submit at hstspreload.org after enabling. Removal takes months — be
+                            sure.
+                          </Trans>
+                        </FormDescription>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              <div className="border-border mt-6 rounded-lg border p-4">
+                <h3 className="text-sm font-semibold">
+                  <Trans>Permissions-Policy</Trans>
+                </h3>
+
+                <p className="text-muted-foreground mt-1 text-xs">
+                  <Trans>
+                    Tells browsers which features (camera, microphone, geolocation, etc.) are denied
+                    for this origin. Reduces blast radius if XSS ever ships.
+                  </Trans>
+                </p>
+
+                <div className="mt-4 space-y-4">
+                  <FormField
+                    control={securityHeadersForm.control}
+                    name="data.permissionsPolicy.enabled"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          <Trans>Send Permissions-Policy header</Trans>
+                        </FormLabel>
+                        <FormControl>
+                          <div>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                          </div>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={securityHeadersForm.control}
+                    name="data.permissionsPolicy.value"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          <Trans>Header value</Trans>
+                        </FormLabel>
+                        <FormControl>
+                          <Textarea
+                            className="h-20 font-mono text-xs"
+                            value={field.value}
+                            onChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          <Trans>
+                            Comma-separated directives. Empty parens = deny. See
+                            developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permissions-Policy for
+                            the full directive list.
+                          </Trans>
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                loading={isUpdateSiteSettingLoading}
+                className="mt-6 justify-end self-end"
+              >
+                <Trans>Update security headers</Trans>
               </Button>
             </form>
           </Form>

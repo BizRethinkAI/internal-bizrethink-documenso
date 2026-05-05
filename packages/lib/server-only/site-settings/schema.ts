@@ -2,6 +2,7 @@
 // site-setting IDs. Importing from `@bizrethink/customizations` keeps the
 // schema declarations themselves out of upstream's tree.
 import { ZSiteSettingsCaptchaSchema } from '@bizrethink/customizations/server-only/site-settings/schemas/captcha';
+import { ZSiteSettingsSecurityHeadersSchema } from '@bizrethink/customizations/server-only/site-settings/schemas/security-headers';
 import { ZSiteSettingsSignupSchema } from '@bizrethink/customizations/server-only/site-settings/schemas/signup';
 import { ZSiteSettingsWebhookSchema } from '@bizrethink/customizations/server-only/site-settings/schemas/webhook';
 import { z } from 'zod';
@@ -15,6 +16,7 @@ export const ZSiteSettingSchema = z.union([
   ZSiteSettingsSignupSchema,
   ZSiteSettingsCaptchaSchema,
   ZSiteSettingsWebhookSchema,
+  ZSiteSettingsSecurityHeadersSchema,
 ]);
 
 export type TSiteSettingSchema = z.infer<typeof ZSiteSettingSchema>;

@@ -1,3 +1,10 @@
+// MODIFIED for BizRethink (overlay 032): import the BizRethink-namespaced
+// config getter so the middleware can apply HSTS + Permissions-Policy and
+// globalize nosniff/Referrer based on the admin-UI-controlled site setting.
+import {
+  buildHstsValue,
+  getSecurityHeadersConfig,
+} from '@bizrethink/customizations/server-only/security-headers-config';
 import { createMiddleware } from 'hono/factory';
 
 import type { HonoEnv } from './router';
@@ -167,15 +174,26 @@ export const securityHeadersMiddleware = createMiddleware<HonoEnv>(async (c, nex
 
   c.res.headers.set('Content-Security-Policy', buildCspHeader({ nonce, kind }));
 
-  // Preserved from the per-route `headers()` export in
-  // apps/remix/app/routes/embed+/_v0+/_layout.tsx, which has been removed.
-  if (kind === 'embed') {
-    if (!c.res.headers.has('Referrer-Policy')) {
-      c.res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-    }
+  // MODIFIED for BizRethink (overlay 032): globalize Referrer-Policy +
+  // X-Content-Type-Options across all page paths (upstream only set them
+  // on /embed). Add HSTS + Permissions-Policy from the admin-UI-controlled
+  // site.security-headers config row. See packages/bizrethink/server-only/
+  // security-headers-config.ts for caching + DB shape.
+  if (!c.res.headers.has('Referrer-Policy')) {
+    c.res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  }
 
-    if (!c.res.headers.has('X-Content-Type-Options')) {
-      c.res.headers.set('X-Content-Type-Options', 'nosniff');
-    }
+  if (!c.res.headers.has('X-Content-Type-Options')) {
+    c.res.headers.set('X-Content-Type-Options', 'nosniff');
+  }
+
+  const extra = await getSecurityHeadersConfig();
+
+  if (extra.hsts.enabled && !c.res.headers.has('Strict-Transport-Security')) {
+    c.res.headers.set('Strict-Transport-Security', buildHstsValue(extra.hsts));
+  }
+
+  if (extra.permissionsPolicy.enabled && !c.res.headers.has('Permissions-Policy')) {
+    c.res.headers.set('Permissions-Policy', extra.permissionsPolicy.value);
   }
 });
